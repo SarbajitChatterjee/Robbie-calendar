@@ -5,9 +5,13 @@
  * options for timezone, display, email detection, and appearance.
  * Settings are loaded via useUserSettings() and will be persisted
  * via updateUserSettings() when backend is wired.
+ *
+ * Timezone options are fetched dynamically from the `timezones` DB table
+ * via useTimezones(). No hardcoded timezone entries.
  */
 
 import { useUserSettings } from "@/hooks/useUserSettings";
+import { useTimezones } from "@/hooks/useTimezones";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +19,7 @@ import { LogOut } from "lucide-react";
 
 export default function SettingsView() {
   const { data: settings } = useUserSettings();
+  const { data: timezones = [] } = useTimezones();
 
   if (!settings) return null;
 
@@ -42,11 +47,11 @@ export default function SettingsView() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Asia/Singapore">Singapore (SGT, UTC+8)</SelectItem>
-              <SelectItem value="America/New_York">New York (EST, UTC-5)</SelectItem>
-              <SelectItem value="Europe/Berlin">Berlin (CET, UTC+1)</SelectItem>
-              <SelectItem value="Europe/London">London (GMT, UTC+0)</SelectItem>
-              <SelectItem value="Asia/Tokyo">Tokyo (JST, UTC+9)</SelectItem>
+              {timezones.map((tz) => (
+                <SelectItem key={tz.iana_key} value={tz.iana_key}>
+                  {tz.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </SettingRow>

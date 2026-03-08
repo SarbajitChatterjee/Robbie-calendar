@@ -124,5 +124,21 @@ export interface UserSettings {
   darkMode: boolean;
 }
 
+/**
+ * A timezone record fetched from the `timezones` database table.
+ * Used to populate dropdowns and format timezone display strings dynamically.
+ */
+export interface Timezone {
+  id: number;
+  /** Human-readable label shown in dropdowns, e.g. "Singapore (SGT, UTC+8)". */
+  name: string;
+  /** IANA identifier stored as the user's preference, e.g. "Asia/Singapore". */
+  iana_key: string;
+  /** City or region name, e.g. "Singapore". */
+  location: string;
+  /** Postgres interval string representing UTC offset, e.g. "08:00:00" or "-05:00:00". */
+  utc_offset: string;
+}
+
 /** Navigation tab identifiers used by AppLayout for tab switching. */
 export type TabId = "today" | "week" | "month" | "inbox" | "calendars";
