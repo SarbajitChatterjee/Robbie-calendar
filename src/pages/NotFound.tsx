@@ -1,3 +1,8 @@
+/**
+ * NotFound.tsx — 404 catch-all page.
+ * Rendered by React Router when no defined route matches the current URL.
+ * Logs the attempted path to the console for debugging/analytics.
+ */
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 
