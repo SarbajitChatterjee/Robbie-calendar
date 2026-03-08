@@ -26,9 +26,9 @@ export default function AppLayout() {
       <nav className="hidden md:flex items-center justify-between px-6 h-16 border-b border-border bg-card">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-[hsl(var(--fuse-primary))] flex items-center justify-center">
-            <span className="text-white font-bold text-sm">F</span>
+            <span className="text-white font-bold text-sm">R</span>
           </div>
-          <span className="font-bold text-lg text-foreground">Fuse Calendar</span>
+          <span className="font-bold text-lg text-foreground">Robbie</span>
         </div>
         <div className="flex items-center gap-1">
           {tabs.map((tab) => {
