@@ -10,6 +10,7 @@ import { useState } from "react";
 import { format, parseISO, isToday } from "date-fns";
 import { Plus, Mail } from "lucide-react";
 import { useWeekEvents, usePendingInbox } from "@/hooks/useEvents";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { CalendarEvent } from "@/types";
 import { EventCard } from "@/components/shared/EventCard";
@@ -35,7 +36,7 @@ function groupEvents(events: CalendarEvent[]) {
 }
 
 export default function TodayView() {
-  const { data: events, isLoading } = useWeekEvents();
+  const { data: events, isLoading, isError, refetch } = useWeekEvents();
   const { data: pendingEvents } = usePendingInbox();
   const { data: settings } = useUserSettings();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -71,7 +72,11 @@ export default function TodayView() {
       <div className="flex-1 px-5 pb-24 space-y-6">
         {isLoading && <EventListSkeleton />}
 
-        {!isLoading && !hasEvents && (
+        {!isLoading && isError && (
+          <ErrorState message="Couldn't load today's events" onRetry={refetch} />
+        )}
+
+        {!isLoading && !isError && !hasEvents && (
           <EmptyState
             emoji="☀️"
             title="Nothing scheduled today"

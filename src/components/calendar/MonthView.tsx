@@ -14,6 +14,7 @@ import { useState } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, isSameMonth, isSameDay, isToday, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useWeekEvents } from "@/hooks/useEvents";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { CalendarEvent } from "@/types";
 import { EventCard } from "@/components/shared/EventCard";
 import { EventDetailSheet } from "@/components/shared/EventDetailSheet";
@@ -21,7 +22,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 
 export default function MonthView() {
   const [monthOffset, setMonthOffset] = useState(0);
-  const { data: events } = useWeekEvents();
+  const { data: events, isError, refetch } = useWeekEvents();
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
@@ -79,6 +80,10 @@ export default function MonthView() {
       </div>
 
       {/* Calendar grid — each cell is a day button with optional event dots */}
+      {isError && (
+        <div className="px-5"><ErrorState message="Couldn't load events" onRetry={refetch} /></div>
+      )}
+
       <div className="flex-1 px-5 space-y-1">
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7 gap-0">

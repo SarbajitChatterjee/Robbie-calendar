@@ -16,12 +16,14 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LogOut } from "lucide-react";
+import { ErrorState } from "@/components/shared/ErrorState";
 
 export default function SettingsView() {
-  const { data: settings } = useUserSettings();
+  const { data: settings, isLoading, isError, refetch } = useUserSettings();
   const { data: timezones = [] } = useTimezones();
 
-  if (!settings) return null;
+  if (isLoading) return null;
+  if (isError || !settings) return <div className="p-5"><ErrorState message="Couldn't load your settings" onRetry={refetch} /></div>;
 
   // Generate initials from display name for the avatar placeholder
   const initials = settings.displayName.slice(0, 2).toUpperCase();

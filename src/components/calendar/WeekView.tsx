@@ -18,6 +18,7 @@ import { useWeekEvents } from "@/hooks/useEvents";
 import { CalendarEvent } from "@/types";
 import { EventDetailSheet } from "@/components/shared/EventDetailSheet";
 import { EventListSkeleton } from "@/components/shared/EventSkeleton";
+import { ErrorState } from "@/components/shared/ErrorState";
 
 /** Visible hours in the grid: 7 AM through 8 PM (index 7–20). */
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
@@ -27,7 +28,7 @@ const HOUR_HEIGHT = 60;
 
 export default function WeekView() {
   const [weekOffset, setWeekOffset] = useState(0);
-  const { data: events, isLoading } = useWeekEvents();
+  const { data: events, isLoading, isError, refetch } = useWeekEvents();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
   // Calculate the week boundaries based on offset from current week
@@ -70,6 +71,8 @@ export default function WeekView() {
       {/* Hourly time grid with events */}
       {isLoading ? (
         <div className="p-5"><EventListSkeleton count={2} /></div>
+      ) : isError ? (
+        <div className="p-5"><ErrorState message="Couldn't load this week's events" onRetry={refetch} /></div>
       ) : (
         <div className="flex-1 overflow-auto relative">
           <div className="grid grid-cols-[3rem_repeat(7,1fr)] relative" style={{ height: HOURS.length * HOUR_HEIGHT }}>

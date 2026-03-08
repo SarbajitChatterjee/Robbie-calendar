@@ -12,6 +12,7 @@ import { CalendarConnection } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { EventListSkeleton } from "@/components/shared/EventSkeleton";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { ChevronRight, AlertTriangle, Plus, Server } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
@@ -34,7 +35,7 @@ const connectionBadge: Record<string, { label: string; color: string }> = {
 };
 
 export default function CalendarsView() {
-  const { data: connections, isLoading } = useCalendars();
+  const { data: connections, isLoading, isError, refetch } = useCalendars();
   const [privacyOpen, setPrivacyOpen] = useState(false);
 
   return (
@@ -47,6 +48,7 @@ export default function CalendarsView() {
       <section className="px-5 space-y-3 mb-8">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Your Connected Calendars</h2>
         {isLoading && <EventListSkeleton count={3} />}
+        {!isLoading && isError && <ErrorState message="Couldn't load your calendars" onRetry={refetch} />}
         {connections?.map((conn) => <ConnectionRow key={conn.id} connection={conn} />)}
       </section>
 
