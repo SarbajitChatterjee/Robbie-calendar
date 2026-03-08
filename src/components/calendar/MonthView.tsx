@@ -22,7 +22,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 
 export default function MonthView() {
   const [monthOffset, setMonthOffset] = useState(0);
-  const { data: events } = useWeekEvents();
+  const { data: events, isError, refetch } = useWeekEvents();
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
