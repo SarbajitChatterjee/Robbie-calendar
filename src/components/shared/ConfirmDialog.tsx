@@ -3,6 +3,10 @@
  *
  * Built on top of shadcn AlertDialog. Supports optional destructive styling
  * for the confirm button (red background for delete/disconnect actions).
+ *
+ * NOTE: Intentionally not imported by any component yet. Reserved for future
+ * destructive actions such as "Disconnect calendar" and "Delete everything"
+ * in CalendarsView. Keeping it pre-built avoids re-implementing when needed.
  */
 
 import {

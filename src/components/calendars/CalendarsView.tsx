@@ -5,9 +5,15 @@
  * A. Connected Calendars — shows existing connections with sync status and toggle
  * B. Add a Source — cards for connecting new providers (Google, Apple, Outlook, etc.)
  * C. Privacy & Data — collapsible section explaining data handling + danger zone actions
+ *
+ * The connection toggle calls `toggleCalendarVisibility()` and provides
+ * immediate toast feedback. When the backend is live, it persists the change;
+ * while disconnected, the error toast lets the user know.
  */
 
+import { useState } from "react";
 import { useCalendars } from "@/hooks/useCalendars";
+import { toggleCalendarVisibility } from "@/services/api";
 import { CalendarConnection } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -15,8 +21,8 @@ import { EventListSkeleton } from "@/components/shared/EventSkeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { ChevronRight, AlertTriangle, Plus, Server } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { toast } from "sonner";
 
 /** Icon config for each calendar source type. */
 const sourceIcons: Record<string, { bg: string; label: string }> = {
@@ -97,6 +103,8 @@ export default function CalendarsView() {
  * Shows: source icon, display name, account email, sync status (with
  * relative timestamp), connection type badge, color indicator, and
  * an enable/disable toggle switch.
+ *
+ * The toggle calls `toggleCalendarVisibility()` with optimistic feedback.
  */
 function ConnectionRow({ connection }: { connection: CalendarConnection }) {
   const icon = sourceIcons[connection.source];
@@ -107,6 +115,16 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
     : connection.syncStatus === "syncing"
     ? "Syncing..."
     : `Synced ${formatDistanceToNow(new Date(connection.lastSyncedAt))} ago ✓`;
+
+  /** Persists the toggle state; shows toast feedback on success/failure. */
+  const handleToggle = async (enabled: boolean) => {
+    try {
+      await toggleCalendarVisibility(connection.id, enabled);
+      toast.success(enabled ? "Calendar shown" : "Calendar hidden");
+    } catch {
+      toast.error("Couldn't update — try again");
+    }
+  };
 
   return (
     <div className="rounded-[var(--radius-card)] bg-card p-4 shadow-[0_2px_8px_hsl(var(--shadow-soft))] flex items-center gap-3">
@@ -126,7 +144,7 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
       </div>
       {/* Color indicator strip */}
       <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: connection.color }} />
-      <Switch defaultChecked={connection.isEnabled} />
+      <Switch defaultChecked={connection.isEnabled} onCheckedChange={handleToggle} />
     </div>
   );
 }

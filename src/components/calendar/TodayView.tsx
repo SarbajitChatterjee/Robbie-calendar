@@ -4,6 +4,9 @@
  * Groups today's events into time-of-day sections (All Day, Morning,
  * Afternoon, Evening) for easy scanning. Also shows a banner when
  * there are pending email invitations awaiting review.
+ *
+ * Accepts `onTabChange` from AppLayout so the "Review" banner button
+ * can navigate directly to the Inbox tab.
  */
 
 import { useState } from "react";
@@ -12,13 +15,18 @@ import { Plus, Mail } from "lucide-react";
 import { useWeekEvents, usePendingInbox } from "@/hooks/useEvents";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { useUserSettings } from "@/hooks/useUserSettings";
-import { CalendarEvent } from "@/types";
+import { CalendarEvent, TabId } from "@/types";
 import { EventCard } from "@/components/shared/EventCard";
 import { EventDetailSheet } from "@/components/shared/EventDetailSheet";
 import { EventListSkeleton } from "@/components/shared/EventSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { TimezonePill } from "@/components/shared/TimezoneDisplay";
 import { Button } from "@/components/ui/button";
+
+interface TodayViewProps {
+  /** Callback to switch the active tab (e.g. navigate to Inbox). */
+  onTabChange?: (tabId: TabId) => void;
+}
 
 /**
  * Filters events to today and splits them into time-of-day buckets.
@@ -35,7 +43,7 @@ function groupEvents(events: CalendarEvent[]) {
   return { allDay, morning, afternoon, evening };
 }
 
-export default function TodayView() {
+export default function TodayView({ onTabChange }: TodayViewProps) {
   const { data: events, isLoading, isError, refetch } = useWeekEvents();
   const { data: pendingEvents } = usePendingInbox();
   const { data: settings } = useUserSettings();
@@ -62,7 +70,12 @@ export default function TodayView() {
           <p className="text-sm text-foreground flex-1">
             📨 {pendingCount} new event invitation{pendingCount > 1 ? "s" : ""} found in your email
           </p>
-          <Button variant="outline" size="sm" className="rounded-[var(--radius-button)] h-8 text-xs flex-shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-[var(--radius-button)] h-8 text-xs flex-shrink-0"
+            onClick={() => onTabChange?.("inbox")}
+          >
             Review
           </Button>
         </div>

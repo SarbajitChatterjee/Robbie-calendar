@@ -3,24 +3,50 @@
  *
  * Displays the user's profile (avatar, name, email) and configurable
  * options for timezone, display, email detection, and appearance.
- * Settings are loaded via useUserSettings() and will be persisted
- * via updateUserSettings() when backend is wired.
  *
- * Timezone options are fetched dynamically from the `timezones` DB table
+ * Each control calls `updateUserSettings()` on change with a try/catch.
+ * While the backend is disconnected, the catch block shows a Sonner toast
+ * so the user gets immediate feedback. Once the backend is live, changes
+ * persist automatically with no component modifications needed.
+ *
+ * Timezone options are fetched dynamically from the `timezones` table
  * via useTimezones(). No hardcoded timezone entries.
  */
 
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { useTimezones } from "@/hooks/useTimezones";
+import { updateUserSettings } from "@/services/api";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LogOut } from "lucide-react";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { toast } from "sonner";
+import { UserSettings } from "@/types";
+import { useQueryClient } from "@tanstack/react-query";
+
+/**
+ * Attempts to persist a partial settings update.
+ * Shows a toast on success or failure for immediate user feedback.
+ */
+async function saveSettingWithFeedback(
+  patch: Partial<UserSettings>,
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
+  try {
+    await updateUserSettings(patch);
+    // Invalidate cache so the UI reflects the server state
+    queryClient.invalidateQueries({ queryKey: ["user-settings"] });
+    toast.success("Settings updated");
+  } catch {
+    toast.error("Couldn't save — try again later");
+  }
+}
 
 export default function SettingsView() {
   const { data: settings, isLoading, isError, refetch } = useUserSettings();
   const { data: timezones = [] } = useTimezones();
+  const queryClient = useQueryClient();
 
   if (isLoading) return null;
   if (isError || !settings) return <div className="p-5"><ErrorState message="Couldn't load your settings" onRetry={refetch} /></div>;
@@ -44,7 +70,10 @@ export default function SettingsView() {
       {/* Settings list */}
       <div className="px-5 space-y-6">
         <SettingRow label="Home Timezone">
-          <Select defaultValue={settings.homeTimezone}>
+          <Select
+            defaultValue={settings.homeTimezone}
+            onValueChange={(value) => saveSettingWithFeedback({ homeTimezone: value }, queryClient)}
+          >
             <SelectTrigger className="w-48 h-10 rounded-[var(--radius-button)]">
               <SelectValue />
             </SelectTrigger>
@@ -59,11 +88,17 @@ export default function SettingsView() {
         </SettingRow>
 
         <SettingRow label="Show organizer timezone on events">
-          <Switch defaultChecked={settings.showOrganizerTimezone} />
+          <Switch
+            defaultChecked={settings.showOrganizerTimezone}
+            onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, queryClient)}
+          />
         </SettingRow>
 
         <SettingRow label="First day of week">
-          <Select defaultValue={settings.firstDayOfWeek}>
+          <Select
+            defaultValue={settings.firstDayOfWeek}
+            onValueChange={(value) => saveSettingWithFeedback({ firstDayOfWeek: value as UserSettings["firstDayOfWeek"] }, queryClient)}
+          >
             <SelectTrigger className="w-32 h-10 rounded-[var(--radius-button)]">
               <SelectValue />
             </SelectTrigger>
@@ -75,7 +110,10 @@ export default function SettingsView() {
         </SettingRow>
 
         <SettingRow label="Email detection">
-          <Select defaultValue={settings.emailDetectionMode}>
+          <Select
+            defaultValue={settings.emailDetectionMode}
+            onValueChange={(value) => saveSettingWithFeedback({ emailDetectionMode: value as UserSettings["emailDetectionMode"] }, queryClient)}
+          >
             <SelectTrigger className="w-48 h-10 rounded-[var(--radius-button)]">
               <SelectValue />
             </SelectTrigger>
@@ -87,7 +125,10 @@ export default function SettingsView() {
         </SettingRow>
 
         <SettingRow label="Dark mode">
-          <Switch defaultChecked={settings.darkMode} />
+          <Switch
+            defaultChecked={settings.darkMode}
+            onCheckedChange={(checked) => saveSettingWithFeedback({ darkMode: checked }, queryClient)}
+          />
         </SettingRow>
 
         {/* Sign out — no logic wired yet; will trigger auth.signOut() */}

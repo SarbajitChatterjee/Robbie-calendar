@@ -7,7 +7,8 @@
  *
  * Design notes:
  * - The left color bar uses the event's source calendar color for quick visual ID.
- * - Outlook events show a warning because the mock data simulates an error state.
+ * - Connection-level errors (sync failures, expired tokens) are surfaced at the
+ *   view level via ErrorState, not per-card. This avoids misleading per-event warnings.
  */
 
 import { CalendarEvent } from "@/types";
@@ -30,9 +31,6 @@ export function EventCard({ event, onTap }: EventCardProps) {
 
   // Show organizer timezone only when it differs from the user's timezone
   const showOrganizerTz = event.organizerTimezone !== event.userTimezone;
-
-  // Mock: Outlook connections are in error state, so flag those events
-  const hasError = event.source === "outlook";
 
   return (
     <button
@@ -59,7 +57,7 @@ export function EventCard({ event, onTap }: EventCardProps) {
         {/* Organizer timezone hint (only when different from user's) */}
         {showOrganizerTz && !event.isAllDay && (
           <p className="text-xs text-muted-foreground/70">
-            Organizer's time: {event.organizerTimezone.split("/").pop()?.replace("_", " ")}
+            Organizer's time: {event.organizerTimezone?.split("/").pop()?.replace("_", " ")}
           </p>
         )}
 
@@ -73,13 +71,6 @@ export function EventCard({ event, onTap }: EventCardProps) {
             </span>
           )}
         </div>
-
-        {/* Connection error warning */}
-        {hasError && (
-          <p className="text-xs text-[hsl(var(--status-warning))] mt-1">
-            ⚠ Calendar connection issue — event may be outdated
-          </p>
-        )}
       </div>
 
       {/* Compact join button for events with meeting links */}
