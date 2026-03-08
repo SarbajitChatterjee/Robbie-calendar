@@ -18,6 +18,7 @@ import { useWeekEvents } from "@/hooks/useEvents";
 import { CalendarEvent } from "@/types";
 import { EventDetailSheet } from "@/components/shared/EventDetailSheet";
 import { EventListSkeleton } from "@/components/shared/EventSkeleton";
+import { ErrorState } from "@/components/shared/ErrorState";
 
 /** Visible hours in the grid: 7 AM through 8 PM (index 7–20). */
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
