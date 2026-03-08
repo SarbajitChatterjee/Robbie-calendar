@@ -28,7 +28,7 @@ const HOUR_HEIGHT = 60;
 
 export default function WeekView() {
   const [weekOffset, setWeekOffset] = useState(0);
-  const { data: events, isLoading } = useWeekEvents();
+  const { data: events, isLoading, isError, refetch } = useWeekEvents();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
   // Calculate the week boundaries based on offset from current week
