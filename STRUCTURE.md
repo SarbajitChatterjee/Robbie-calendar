@@ -87,8 +87,7 @@ src/
 │   ├── Settings.tsx           # Settings view — timezone, display, email detection preferences.
 │   └── NotFound.tsx           # 404 catch-all.
 │
-├── styles/
-│   └── theme.css              # Extended design tokens (source colors, pastels, platform colors).
+├── styles/                    # (reserved for future extended stylesheets)
 │
 └── lib/
     └── utils.ts               # Tailwind `cn()` merge utility.
@@ -186,12 +185,11 @@ export async function getEventsForDateRange(           // ← Typed signature
 
 ### Tokens (CSS Custom Properties)
 
-All visual values live in two files:
+All visual values live in one file:
 
 | File | Contains |
 |:-----|:---------|
-| `src/index.css` | Core shadcn tokens (background, foreground, primary, etc.) + Robbie-specific tokens (fuse-primary, source colors, status, surfaces, radii) |
-| `src/styles/theme.css` | Extended tokens (pastel palette, platform colors) |
+| `src/index.css` | All design tokens — shadcn core (background, foreground, primary, etc.) + Robbie-specific (fuse-primary, source colors, status, surfaces, platform colors, radii) |
 
 **Never hardcode colors in components.** Use semantic tokens:
 
