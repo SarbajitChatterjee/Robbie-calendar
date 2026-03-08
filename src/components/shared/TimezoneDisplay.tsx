@@ -7,9 +7,14 @@
  *
  * Also exports TimezonePill — a standalone rounded pill showing the user's timezone,
  * used in the TodayView header.
+ *
+ * All timezone data is resolved dynamically from the `timezones` DB table
+ * via useTimezones(). No hardcoded abbreviation or offset maps.
  */
 
 import { Globe } from "lucide-react";
+import { useTimezones } from "@/hooks/useTimezones";
+import { formatTimezoneDisplay } from "@/lib/timezone-utils";
 
 interface TimezoneDisplayProps {
   userTimezone: string;
@@ -18,35 +23,9 @@ interface TimezoneDisplayProps {
   compact?: boolean;
 }
 
-/** Abbreviation lookup for common timezones. Falls back to the city name. */
-const tzAbbreviations: Record<string, string> = {
-  "Asia/Singapore": "SGT",
-  "Europe/Berlin": "CET",
-  "America/New_York": "EST",
-  "America/Los_Angeles": "PST",
-  "Europe/London": "GMT",
-  "Asia/Tokyo": "JST",
-};
-
-/** UTC offset lookup for display purposes. */
-const tzOffsets: Record<string, string> = {
-  "Asia/Singapore": "UTC+8",
-  "Europe/Berlin": "UTC+1",
-  "America/New_York": "UTC-5",
-  "America/Los_Angeles": "UTC-8",
-  "Europe/London": "UTC+0",
-  "Asia/Tokyo": "UTC+9",
-};
-
-/** Formats a timezone string into abbreviation, offset, and full display string. */
-function formatTz(tz: string) {
-  const abbr = tzAbbreviations[tz] || tz.split("/").pop()?.replace("_", " ") || tz;
-  const offset = tzOffsets[tz] || "";
-  return { abbr, offset, full: offset ? `${abbr} (${offset})` : abbr };
-}
-
 export function TimezoneDisplay({ userTimezone, organizerTimezone, showOrganizer = true, compact = false }: TimezoneDisplayProps) {
-  const user = formatTz(userTimezone);
+  const { data: timezones = [] } = useTimezones();
+  const user = formatTimezoneDisplay(userTimezone, timezones);
   const isDifferent = organizerTimezone && organizerTimezone !== userTimezone;
 
   if (compact) {
@@ -66,7 +45,7 @@ export function TimezoneDisplay({ userTimezone, organizerTimezone, showOrganizer
       </div>
       {isDifferent && showOrganizer && (
         <div className="text-xs text-muted-foreground/70 ml-5">
-          Organizer's time: {formatTz(organizerTimezone!).full}
+          Organizer's time: {formatTimezoneDisplay(organizerTimezone!, timezones).full}
         </div>
       )}
     </div>
@@ -75,7 +54,8 @@ export function TimezoneDisplay({ userTimezone, organizerTimezone, showOrganizer
 
 /** TimezonePill — Compact rounded pill showing the user's timezone. Used in view headers. */
 export function TimezonePill({ timezone }: { timezone: string }) {
-  const { full } = formatTz(timezone);
+  const { data: timezones = [] } = useTimezones();
+  const { full } = formatTimezoneDisplay(timezone, timezones);
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
       <Globe className="w-3 h-3" />
