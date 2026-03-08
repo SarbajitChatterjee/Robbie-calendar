@@ -1,343 +1,292 @@
 /**
- * Robbie — Service Layer
+ * Robbie — Service Layer (Backend-Ready Placeholders)
  *
  * ⭐ THIS IS THE ONLY FILE THE BACKEND ENGINEER MODIFIES.
  *
  * Every function in this file:
  * 1. Has a JSDoc with the intended REST endpoint
  * 2. Returns typed data matching interfaces in src/types/index.ts
- * 3. Currently returns mock data with simulated network delay
+ * 3. Contains a commented-out Supabase query (the "REAL" block)
+ * 4. Currently throws a "Backend not connected" error (the "PLACEHOLDER" block)
  *
  * To wire up the real backend:
- * - Replace the mock return with a fetch() / supabase call
- * - Keep the function signature identical
- * - Throw standard errors — TanStack Query handles them upstream
+ * ─────────────────────────────────────────────────────────────────
+ * 1. Create the Supabase project and run the DDL below.
+ * 2. Generate or create `src/integrations/supabase/client.ts`:
+ *      import { createClient } from "@supabase/supabase-js";
+ *      export const supabase = createClient(
+ *        "https://<PROJECT_REF>.supabase.co",
+ *        "<ANON_KEY>"
+ *      );
+ * 3. Uncomment the import line below.
+ * 4. In each function, uncomment the "REAL" block, delete the "PLACEHOLDER" block.
+ * 5. Deploy Edge Functions for OAuth, sync, Apple, CalDAV, and data deletion.
+ * ─────────────────────────────────────────────────────────────────
+ *
+ * ═══════════════════════════════════════════════════════════════
+ *  SQL DDL — Run this in the Supabase SQL editor to create tables
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * -- 1. Events table
+ * CREATE TABLE events (
+ *   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ *   user_id        UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+ *   title          TEXT NOT NULL,
+ *   start_time     TIMESTAMPTZ NOT NULL,
+ *   end_time       TIMESTAMPTZ NOT NULL,
+ *   is_all_day     BOOLEAN DEFAULT FALSE,
+ *   organizer_tz   TEXT,
+ *   user_tz        TEXT,
+ *   meeting_link   TEXT,
+ *   meeting_platform TEXT,
+ *   meeting_id     TEXT,
+ *   meeting_passcode TEXT,
+ *   organizer      JSONB,           -- { name, email }
+ *   attendees      JSONB DEFAULT '[]',
+ *   description    TEXT,
+ *   location       TEXT,
+ *   calendar_id    TEXT,
+ *   calendar_name  TEXT,
+ *   account_email  TEXT,
+ *   source         TEXT NOT NULL,    -- google | apple | outlook | caldav | gmail
+ *   color          TEXT,
+ *   is_read_only   BOOLEAN DEFAULT FALSE,
+ *   detected_from_email  BOOLEAN DEFAULT FALSE,
+ *   email_detection_method TEXT,     -- ics_attachment | smart_parse
+ *   email_sender   TEXT,
+ *   email_snippet  TEXT,
+ *   acceptance_status TEXT DEFAULT 'pending_review',
+ *   created_at     TIMESTAMPTZ DEFAULT now()
+ * );
+ *
+ * -- 2. Calendar connections
+ * CREATE TABLE calendar_connections (
+ *   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ *   user_id          UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+ *   source           TEXT NOT NULL,
+ *   connection_type  TEXT NOT NULL,  -- calendar | email_watch | both
+ *   account_email    TEXT NOT NULL,
+ *   display_name     TEXT,
+ *   color            TEXT,
+ *   is_enabled       BOOLEAN DEFAULT TRUE,
+ *   email_watch_enabled BOOLEAN DEFAULT FALSE,
+ *   last_synced_at   TIMESTAMPTZ,
+ *   sync_status      TEXT DEFAULT 'synced',
+ *   error_message    TEXT,
+ *   created_at       TIMESTAMPTZ DEFAULT now()
+ * );
+ *
+ * -- 3. Sub-calendars (nested under connections)
+ * CREATE TABLE sub_calendars (
+ *   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+ *   connection_id UUID REFERENCES calendar_connections(id) ON DELETE CASCADE NOT NULL,
+ *   name          TEXT NOT NULL,
+ *   color         TEXT,
+ *   is_enabled    BOOLEAN DEFAULT TRUE,
+ *   is_read_only  BOOLEAN DEFAULT FALSE
+ * );
+ *
+ * -- 4. User settings (one row per user)
+ * CREATE TABLE user_settings (
+ *   user_id              UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+ *   home_timezone        TEXT DEFAULT 'UTC',
+ *   show_organizer_tz    BOOLEAN DEFAULT TRUE,
+ *   default_calendar_id  TEXT,
+ *   first_day_of_week    TEXT DEFAULT 'monday',
+ *   email_detection_mode TEXT DEFAULT 'ics_only',
+ *   display_name         TEXT,
+ *   email                TEXT,
+ *   dark_mode            BOOLEAN DEFAULT FALSE
+ * );
+ *
+ * -- 5. Timezones (reference/lookup, no RLS needed)
+ * CREATE TABLE timezones (
+ *   id         SERIAL PRIMARY KEY,
+ *   name       TEXT NOT NULL,
+ *   iana_key   TEXT UNIQUE NOT NULL,
+ *   location   TEXT,
+ *   utc_offset INTERVAL
+ * );
+ *
+ * ═══════════════════════════════════════════════════════════════
+ *  Edge Functions needed (deploy to supabase/functions/)
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * 1. connect-oauth      — Initiates OAuth flow for Google / Outlook
+ * 2. connect-apple      — Connects Apple iCloud via app-specific password
+ * 3. connect-caldav     — Connects a generic CalDAV server
+ * 4. sync-calendars     — Triggers an immediate calendar sync
+ * 5. delete-user-data   — Permanently deletes all user data
  */
 
 import { CalendarEvent, CalendarConnection, UserSettings, Timezone } from "@/types";
-import { addDays, startOfWeek, format, setHours, setMinutes } from "date-fns";
+
+// ── Uncomment when Supabase client is ready ──
+// import { supabase } from "@/integrations/supabase/client";
 
 // ─────────────────────────────────────────────
-// Helpers for generating mock dates relative to "today"
+// Row Mappers — Postgres snake_case → Frontend camelCase
 // ─────────────────────────────────────────────
 
-const today = () => new Date();
+/** Maps a Postgres `events` row to the frontend CalendarEvent interface. */
+export function mapEventRow(row: Record<string, unknown>): CalendarEvent {
+  return {
+    id: row.id as string,
+    title: row.title as string,
+    start: row.start_time as string,
+    end: row.end_time as string,
+    isAllDay: row.is_all_day as boolean,
+    organizerTimezone: row.organizer_tz as string | undefined,
+    userTimezone: row.user_tz as string | undefined,
+    meetingLink: row.meeting_link as string | undefined,
+    meetingPlatform: row.meeting_platform as CalendarEvent["meetingPlatform"],
+    meetingId: row.meeting_id as string | undefined,
+    meetingPasscode: row.meeting_passcode as string | undefined,
+    organizer: row.organizer as CalendarEvent["organizer"],
+    attendees: row.attendees as CalendarEvent["attendees"],
+    description: row.description as string | undefined,
+    location: row.location as string | undefined,
+    calendarId: row.calendar_id as string,
+    calendarName: row.calendar_name as string,
+    accountEmail: row.account_email as string,
+    source: row.source as CalendarEvent["source"],
+    color: row.color as string,
+    isReadOnly: row.is_read_only as boolean,
+    detectedFromEmail: row.detected_from_email as boolean,
+    emailDetectionMethod: row.email_detection_method as CalendarEvent["emailDetectionMethod"],
+    emailSender: row.email_sender as string | undefined,
+    emailSnippet: row.email_snippet as string | undefined,
+    acceptanceStatus: row.acceptance_status as CalendarEvent["acceptanceStatus"],
+  };
+}
 
-/** Creates an ISO date string offset by `dayOffset` days, set to `hour:minute`. */
-const makeDate = (dayOffset: number, hour: number, minute = 0) => {
-  const d = addDays(today(), dayOffset);
-  return setMinutes(setHours(d, hour), minute).toISOString();
-};
-
-// Calculate Monday offset so mock events always align to the current week
-const weekStart = startOfWeek(today(), { weekStartsOn: 1 });
-const dayOfWeek = today().getDay(); // 0 = Sunday
-const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-
-// ─────────────────────────────────────────────
-// Mock Data: Calendar Events
-// ─────────────────────────────────────────────
-
-const MOCK_EVENTS: CalendarEvent[] = [
-  {
-    id: "evt-1",
-    title: "Weekly Team Standup",
-    start: makeDate(mondayOffset, 9, 0),
-    end: makeDate(mondayOffset, 9, 30),
-    isAllDay: false,
-    organizerTimezone: "Europe/Berlin",
-    userTimezone: "Asia/Singapore",
-    meetingLink: "https://zoom.us/j/123456789",
-    meetingPlatform: "zoom",
-    meetingId: "123 456 789",
-    meetingPasscode: "abc123",
-    organizer: { name: "Sarah Chen", email: "sarah@company.com" },
-    attendees: [
-      { name: "You", email: "me@company.com", rsvpStatus: "accepted", isCurrentUser: true },
-      { name: "Sarah Chen", email: "sarah@company.com", rsvpStatus: "accepted", isCurrentUser: false },
-      { name: "James Lee", email: "james@company.com", rsvpStatus: "accepted", isCurrentUser: false },
-      { name: "Maria Lopez", email: "maria@company.com", rsvpStatus: "pending", isCurrentUser: false },
-    ],
-    description: "Weekly sync to review sprint progress and blockers.",
-    calendarId: "cal-google-work",
-    calendarName: "Work",
-    accountEmail: "me@company.com",
-    source: "google",
-    color: "#4285F4",
-    isReadOnly: false,
-    detectedFromEmail: false,
-    acceptanceStatus: "accepted",
-  },
-  {
-    id: "evt-2",
-    title: "Dentist Appointment",
-    start: makeDate(mondayOffset + 2, 14, 0),
-    end: makeDate(mondayOffset + 2, 15, 0),
-    isAllDay: false,
-    organizerTimezone: "Asia/Singapore",
-    userTimezone: "Asia/Singapore",
-    location: "23 Orchard Road, Singapore",
-    calendarId: "cal-apple-personal",
-    calendarName: "Personal",
-    accountEmail: "me@icloud.com",
-    source: "apple",
-    color: "#E8634F",
-    isReadOnly: false,
-    detectedFromEmail: false,
-    acceptanceStatus: "accepted",
-    description: "Regular checkup with Dr. Tan.",
-  },
-  {
-    id: "evt-3",
-    title: "Product Review",
-    start: makeDate(mondayOffset + 3, 15, 0),
-    end: makeDate(mondayOffset + 3, 16, 30),
-    isAllDay: false,
-    organizerTimezone: "Asia/Singapore",
-    userTimezone: "Asia/Singapore",
-    meetingLink: "https://meet.google.com/abc-defg-hij",
-    meetingPlatform: "meet",
-    organizer: { name: "Alex Wong", email: "alex@company.com" },
-    attendees: [
-      { name: "You", email: "me@company.com", rsvpStatus: "accepted", isCurrentUser: true },
-      { name: "Alex Wong", email: "alex@company.com", rsvpStatus: "accepted", isCurrentUser: false },
-      { name: "Sarah Chen", email: "sarah@company.com", rsvpStatus: "accepted", isCurrentUser: false },
-      { name: "James Lee", email: "james@company.com", rsvpStatus: "pending", isCurrentUser: false },
-      { name: "Emily Tan", email: "emily@company.com", rsvpStatus: "declined", isCurrentUser: false },
-      { name: "David Kim", email: "david@company.com", rsvpStatus: "accepted", isCurrentUser: false },
-    ],
-    description: "Q2 product roadmap review. Bring your ideas!",
-    calendarId: "cal-google-work",
-    calendarName: "Work",
-    accountEmail: "me@company.com",
-    source: "google",
-    color: "#4285F4",
-    isReadOnly: false,
-    detectedFromEmail: false,
-    acceptanceStatus: "accepted",
-  },
-  {
-    id: "evt-4",
-    title: "Dad's Birthday 🎂",
-    start: makeDate(mondayOffset + 4, 0, 0),
-    end: makeDate(mondayOffset + 4, 23, 59),
-    isAllDay: true,
-    organizerTimezone: "Asia/Singapore",
-    userTimezone: "Asia/Singapore",
-    calendarId: "cal-apple-personal",
-    calendarName: "Personal",
-    accountEmail: "me@icloud.com",
-    source: "apple",
-    color: "#E8634F",
-    isReadOnly: false,
-    detectedFromEmail: false,
-    acceptanceStatus: "accepted",
-  },
-  {
-    id: "evt-5",
-    title: "Sales Sync",
-    start: makeDate(mondayOffset + 1, 11, 0),
-    end: makeDate(mondayOffset + 1, 12, 0),
-    isAllDay: false,
-    organizerTimezone: "America/New_York",
-    userTimezone: "Asia/Singapore",
-    meetingLink: "https://teams.microsoft.com/l/meetup/abc",
-    meetingPlatform: "teams",
-    organizer: { name: "Tom Wilson", email: "tom@partner.com" },
-    attendees: [
-      { name: "You", email: "me@company.com", rsvpStatus: "accepted", isCurrentUser: true },
-      { name: "Tom Wilson", email: "tom@partner.com", rsvpStatus: "accepted", isCurrentUser: false },
-    ],
-    description: "Monthly sales alignment call.",
-    calendarId: "cal-outlook-team",
-    calendarName: "Team Shared",
-    accountEmail: "me@outlook.com",
-    source: "outlook",
-    color: "#2BA4A4",
-    isReadOnly: true,
-    detectedFromEmail: false,
-    acceptanceStatus: "accepted",
-  },
-];
-
-// ─────────────────────────────────────────────
-// Mock Data: Pending Email-Detected Events
-// ─────────────────────────────────────────────
-
-const MOCK_PENDING_EVENTS: CalendarEvent[] = [
-  {
-    id: "pending-1",
-    title: "Q2 Planning Workshop",
-    start: makeDate(7, 10, 0),
-    end: makeDate(7, 13, 0),
-    isAllDay: false,
-    organizerTimezone: "America/New_York",
-    userTimezone: "Asia/Singapore",
-    meetingLink: "https://teams.microsoft.com/l/meetup/xyz",
-    meetingPlatform: "teams",
-    organizer: { name: "Lisa Park", email: "manager@company.com" },
-    attendees: Array.from({ length: 8 }, (_, i) => ({
-      name: `Attendee ${i + 1}`,
-      email: `person${i + 1}@company.com`,
-      rsvpStatus: "pending" as const,
-      isCurrentUser: i === 0,
+/** Maps a Postgres `calendar_connections` row + nested `sub_calendars` to CalendarConnection. */
+export function mapConnectionRow(row: Record<string, unknown>): CalendarConnection {
+  return {
+    id: row.id as string,
+    userId: row.user_id as string,
+    source: row.source as CalendarConnection["source"],
+    connectionType: row.connection_type as CalendarConnection["connectionType"],
+    accountEmail: row.account_email as string,
+    displayName: row.display_name as string,
+    color: row.color as string,
+    isEnabled: row.is_enabled as boolean,
+    emailWatchEnabled: row.email_watch_enabled as boolean,
+    lastSyncedAt: row.last_synced_at as string,
+    syncStatus: row.sync_status as CalendarConnection["syncStatus"],
+    errorMessage: row.error_message as string | undefined,
+    calendars: (row.sub_calendars as Array<Record<string, unknown>> ?? []).map((sc) => ({
+      id: sc.id as string,
+      name: sc.name as string,
+      color: sc.color as string,
+      isEnabled: sc.is_enabled as boolean,
+      isReadOnly: sc.is_read_only as boolean,
     })),
-    description: "Full-day planning workshop for Q2 initiatives. Bring laptops.",
-    calendarId: "",
-    calendarName: "",
-    accountEmail: "me@company.com",
-    source: "google",
-    color: "#4285F4",
-    isReadOnly: false,
-    detectedFromEmail: true,
-    emailDetectionMethod: "ics_attachment",
-    emailSender: "manager@company.com",
-    emailSnippet: "Hi team, please join us for the Q2 planning workshop next Monday. Calendar invite attached.",
-    acceptanceStatus: "pending_review",
-  },
-  {
-    id: "pending-2",
-    title: "Flight SQ321 Singapore → London",
-    start: makeDate(12, 23, 55),
-    end: makeDate(13, 6, 30),
-    isAllDay: false,
-    organizerTimezone: "Asia/Singapore",
-    userTimezone: "Asia/Singapore",
-    calendarId: "",
-    calendarName: "",
-    accountEmail: "me@company.com",
-    source: "google",
-    color: "#4285F4",
-    isReadOnly: false,
-    detectedFromEmail: true,
-    emailDetectionMethod: "smart_parse",
-    emailSender: "booking@singaporeair.com",
-    emailSnippet: "Your booking is confirmed. Flight SQ321 departing Singapore Changi Terminal 3 at 23:55.",
-    description: "Singapore Airlines flight to London Heathrow. Booking ref: ABC123.",
-    acceptanceStatus: "pending_review",
-  },
-];
+  };
+}
+
+/** Maps a Postgres `user_settings` row to the frontend UserSettings interface. */
+export function mapSettingsRow(row: Record<string, unknown>): UserSettings {
+  return {
+    userId: row.user_id as string,
+    homeTimezone: row.home_timezone as string,
+    showOrganizerTimezone: row.show_organizer_tz as boolean,
+    defaultCalendarId: row.default_calendar_id as string,
+    firstDayOfWeek: row.first_day_of_week as UserSettings["firstDayOfWeek"],
+    emailDetectionMode: row.email_detection_mode as UserSettings["emailDetectionMode"],
+    displayName: row.display_name as string,
+    email: row.email as string,
+    darkMode: row.dark_mode as boolean,
+  };
+}
+
+/** Converts a partial UserSettings object to Postgres column names for PATCH. */
+export function toSettingsColumns(settings: Partial<UserSettings>): Record<string, unknown> {
+  const map: Record<string, unknown> = {};
+  if (settings.homeTimezone !== undefined) map.home_timezone = settings.homeTimezone;
+  if (settings.showOrganizerTimezone !== undefined) map.show_organizer_tz = settings.showOrganizerTimezone;
+  if (settings.defaultCalendarId !== undefined) map.default_calendar_id = settings.defaultCalendarId;
+  if (settings.firstDayOfWeek !== undefined) map.first_day_of_week = settings.firstDayOfWeek;
+  if (settings.emailDetectionMode !== undefined) map.email_detection_mode = settings.emailDetectionMode;
+  if (settings.displayName !== undefined) map.display_name = settings.displayName;
+  if (settings.email !== undefined) map.email = settings.email;
+  if (settings.darkMode !== undefined) map.dark_mode = settings.darkMode;
+  return map;
+}
 
 // ─────────────────────────────────────────────
-// Mock Data: Calendar Connections
+// Shared error for all placeholder functions
 // ─────────────────────────────────────────────
 
-const MOCK_CONNECTIONS: CalendarConnection[] = [
-  {
-    id: "conn-google",
-    userId: "user-1",
-    source: "google",
-    connectionType: "both",
-    accountEmail: "me@company.com",
-    displayName: "Google · Work",
-    color: "#4285F4",
-    isEnabled: true,
-    emailWatchEnabled: true,
-    lastSyncedAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-    syncStatus: "synced",
-    calendars: [
-      { id: "cal-google-work", name: "Work", color: "#4285F4", isEnabled: true, isReadOnly: false },
-      { id: "cal-google-birthdays", name: "Birthdays", color: "#7986CB", isEnabled: true, isReadOnly: true },
-    ],
-  },
-  {
-    id: "conn-apple",
-    userId: "user-1",
-    source: "apple",
-    connectionType: "calendar",
-    accountEmail: "me@icloud.com",
-    displayName: "Apple · Personal",
-    color: "#E8634F",
-    isEnabled: true,
-    emailWatchEnabled: false,
-    lastSyncedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    syncStatus: "synced",
-    calendars: [
-      { id: "cal-apple-personal", name: "Personal", color: "#E8634F", isEnabled: true, isReadOnly: false },
-    ],
-  },
-  {
-    id: "conn-outlook",
-    userId: "user-1",
-    source: "outlook",
-    connectionType: "calendar",
-    accountEmail: "me@outlook.com",
-    displayName: "Outlook · Team Shared",
-    color: "#2BA4A4",
-    isEnabled: true,
-    emailWatchEnabled: false,
-    lastSyncedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    syncStatus: "error",
-    errorMessage: "Session expired. Tap to reconnect.",
-    calendars: [
-      { id: "cal-outlook-team", name: "Team Shared", color: "#2BA4A4", isEnabled: true, isReadOnly: true },
-    ],
-  },
-];
-
-// ─────────────────────────────────────────────
-// Mock Data: User Settings
-// ─────────────────────────────────────────────
-
-const MOCK_SETTINGS: UserSettings = {
-  userId: "user-1",
-  homeTimezone: "Asia/Singapore",
-  showOrganizerTimezone: true,
-  defaultCalendarId: "cal-google-work",
-  firstDayOfWeek: "monday",
-  emailDetectionMode: "ics_only",
-  displayName: "Alex",
-  email: "me@company.com",
-  darkMode: false,
-};
-
-// ─────────────────────────────────────────────
-// Mock Data: Timezones (mirrors the `timezones` DB table)
-// ─────────────────────────────────────────────
-
-const MOCK_TIMEZONES: Timezone[] = [
-  { id: 1, name: "New York (EST, UTC-5)", iana_key: "America/New_York", location: "New York", utc_offset: "-05:00:00" },
-  { id: 2, name: "London (GMT, UTC+0)", iana_key: "Europe/London", location: "London", utc_offset: "00:00:00" },
-  { id: 3, name: "Berlin (CET, UTC+1)", iana_key: "Europe/Berlin", location: "Berlin", utc_offset: "01:00:00" },
-  { id: 4, name: "Singapore (SGT, UTC+8)", iana_key: "Asia/Singapore", location: "Singapore", utc_offset: "08:00:00" },
-  { id: 5, name: "Tokyo (JST, UTC+9)", iana_key: "Asia/Tokyo", location: "Tokyo", utc_offset: "09:00:00" },
-  { id: 6, name: "Los Angeles (PST, UTC-8)", iana_key: "America/Los_Angeles", location: "Los Angeles", utc_offset: "-08:00:00" },
-];
-
-// ─────────────────────────────────────────────
-// Network simulation helper
-// ─────────────────────────────────────────────
-
-/** Simulates network latency. Replace with real API calls when backend is ready. */
-const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
+const BACKEND_NOT_CONNECTED = "Backend not connected. See src/services/api.ts for setup instructions.";
 
 // ─────────────────────────────────────────────
 // API Functions: Events
 // ─────────────────────────────────────────────
 
-/** GET /api/events?start=&end=&timezone= — Fetches all confirmed events in a date range. */
-export async function getEventsForDateRange(_start: Date, _end: Date): Promise<CalendarEvent[]> {
-  await delay();
-  return MOCK_EVENTS;
+/** GET /api/events?start=&end= — Fetches all confirmed events in a date range. */
+export async function getEventsForDateRange(start: Date, end: Date): Promise<CalendarEvent[]> {
+  // ── REAL (uncomment when Supabase is connected) ──
+  // const { data, error } = await supabase
+  //   .from("events")
+  //   .select("*")
+  //   .gte("start_time", start.toISOString())
+  //   .lte("start_time", end.toISOString())
+  //   .eq("acceptance_status", "accepted")
+  //   .order("start_time", { ascending: true });
+  // if (error) throw new Error(error.message);
+  // return (data ?? []).map(mapEventRow);
+
+  // ── PLACEHOLDER (remove when Supabase is connected) ──
+  void start; void end; // suppress unused-variable warnings
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
 /** GET /api/events/pending-inbox — Fetches events detected from email that need user review. */
 export async function getPendingEmailEvents(): Promise<CalendarEvent[]> {
-  await delay();
-  return MOCK_PENDING_EVENTS;
+  // ── REAL ──
+  // const { data, error } = await supabase
+  //   .from("events")
+  //   .select("*")
+  //   .eq("acceptance_status", "pending_review")
+  //   .eq("detected_from_email", true)
+  //   .order("start_time", { ascending: true });
+  // if (error) throw new Error(error.message);
+  // return (data ?? []).map(mapEventRow);
+
+  // ── PLACEHOLDER ──
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
 /** POST /api/events/accept — Accepts a pending event and adds it to the target calendar. */
-export async function acceptEmailEvent(eventId: string, _targetCalendarId: string): Promise<CalendarEvent> {
-  await delay(500);
-  const evt = MOCK_PENDING_EVENTS.find((e) => e.id === eventId);
-  if (!evt) throw new Error("Event not found");
-  return { ...evt, acceptanceStatus: "accepted" };
+export async function acceptEmailEvent(eventId: string, targetCalendarId: string): Promise<CalendarEvent> {
+  // ── REAL ──
+  // const { data, error } = await supabase
+  //   .from("events")
+  //   .update({ acceptance_status: "accepted", calendar_id: targetCalendarId })
+  //   .eq("id", eventId)
+  //   .select()
+  //   .single();
+  // if (error) throw new Error(error.message);
+  // return mapEventRow(data);
+
+  // ── PLACEHOLDER ──
+  void eventId; void targetCalendarId;
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
 /** POST /api/events/dismiss — Dismisses a pending event (user chose to ignore it). */
-export async function dismissEmailEvent(_eventId: string): Promise<void> {
-  await delay(500);
+export async function dismissEmailEvent(eventId: string): Promise<void> {
+  // ── REAL ──
+  // const { error } = await supabase
+  //   .from("events")
+  //   .update({ acceptance_status: "dismissed" })
+  //   .eq("id", eventId);
+  // if (error) throw new Error(error.message);
+
+  // ── PLACEHOLDER ──
+  void eventId;
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
 // ─────────────────────────────────────────────
@@ -346,51 +295,127 @@ export async function dismissEmailEvent(_eventId: string): Promise<void> {
 
 /** GET /api/calendars — Fetches all connected calendar accounts for the current user. */
 export async function getCalendarConnections(): Promise<CalendarConnection[]> {
-  await delay();
-  return MOCK_CONNECTIONS;
+  // ── REAL ──
+  // const { data, error } = await supabase
+  //   .from("calendar_connections")
+  //   .select("*, sub_calendars(*)")
+  //   .order("created_at", { ascending: true });
+  // if (error) throw new Error(error.message);
+  // return (data ?? []).map(mapConnectionRow);
+
+  // ── PLACEHOLDER ──
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
-/** POST /api/calendars/connect/oauth — Initiates OAuth flow for Google or Outlook. Returns a redirect URL. */
-export async function initiateOAuthConnection(_source: "google" | "outlook"): Promise<{ redirectUrl: string }> {
-  await delay(500);
-  return { redirectUrl: "#" };
+/** POST /api/calendars/connect/oauth — Initiates OAuth flow. Returns a redirect URL from Edge Function. */
+export async function initiateOAuthConnection(source: "google" | "outlook"): Promise<{ redirectUrl: string }> {
+  // ── REAL ──
+  // const { data, error } = await supabase.functions.invoke("connect-oauth", {
+  //   body: { source },
+  // });
+  // if (error) throw new Error(error.message);
+  // return { redirectUrl: data.redirectUrl };
+
+  // ── PLACEHOLDER ──
+  void source;
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
-/** POST /api/calendars/connect/apple — Connects an Apple iCloud calendar via app-specific password. */
-export async function connectAppleCalendar(_appleId: string, _appPassword: string): Promise<CalendarConnection> {
-  await delay(800);
-  return MOCK_CONNECTIONS[1];
+/** POST /api/calendars/connect/apple — Connects Apple iCloud via app-specific password. */
+export async function connectAppleCalendar(appleId: string, appPassword: string): Promise<CalendarConnection> {
+  // ── REAL ──
+  // const { data, error } = await supabase.functions.invoke("connect-apple", {
+  //   body: { appleId, appPassword },
+  // });
+  // if (error) throw new Error(error.message);
+  // return mapConnectionRow(data);
+
+  // ── PLACEHOLDER ──
+  void appleId; void appPassword;
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
 /** POST /api/calendars/connect/caldav — Connects a generic CalDAV server. */
-export async function connectCalDAV(_serverUrl: string, _username: string, _password: string): Promise<CalendarConnection> {
-  await delay(800);
-  return { ...MOCK_CONNECTIONS[0], id: "conn-caldav", source: "caldav", displayName: "CalDAV Server" };
+export async function connectCalDAV(serverUrl: string, username: string, password: string): Promise<CalendarConnection> {
+  // ── REAL ──
+  // const { data, error } = await supabase.functions.invoke("connect-caldav", {
+  //   body: { serverUrl, username, password },
+  // });
+  // if (error) throw new Error(error.message);
+  // return mapConnectionRow(data);
+
+  // ── PLACEHOLDER ──
+  void serverUrl; void username; void password;
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
-/** DELETE /api/calendars/:id — Disconnects a calendar source and removes all associated data. */
-export async function disconnectCalendar(_connectionId: string): Promise<void> {
-  await delay(500);
+/** DELETE /api/calendars/:id — Disconnects a calendar source. */
+export async function disconnectCalendar(connectionId: string): Promise<void> {
+  // ── REAL ──
+  // const { error } = await supabase
+  //   .from("calendar_connections")
+  //   .delete()
+  //   .eq("id", connectionId);
+  // if (error) throw new Error(error.message);
+
+  // ── PLACEHOLDER ──
+  void connectionId;
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
-/** POST /api/calendars/:id/sync — Triggers an immediate sync for one or all connections. */
-export async function syncNow(_connectionId?: string): Promise<void> {
-  await delay(1000);
+/** POST /api/calendars/:id/sync — Triggers an immediate sync via Edge Function. */
+export async function syncNow(connectionId?: string): Promise<void> {
+  // ── REAL ──
+  // const { error } = await supabase.functions.invoke("sync-calendars", {
+  //   body: { connectionId },
+  // });
+  // if (error) throw new Error(error.message);
+
+  // ── PLACEHOLDER ──
+  void connectionId;
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
 /** PATCH /api/calendars/:id/color — Updates the display color for a calendar connection. */
-export async function updateCalendarColor(_connectionId: string, _color: string): Promise<void> {
-  await delay(300);
+export async function updateCalendarColor(connectionId: string, color: string): Promise<void> {
+  // ── REAL ──
+  // const { error } = await supabase
+  //   .from("calendar_connections")
+  //   .update({ color })
+  //   .eq("id", connectionId);
+  // if (error) throw new Error(error.message);
+
+  // ── PLACEHOLDER ──
+  void connectionId; void color;
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
 /** PATCH /api/calendars/:id/visibility — Toggles whether a calendar's events appear in views. */
-export async function toggleCalendarVisibility(_connectionId: string, _enabled: boolean): Promise<void> {
-  await delay(300);
+export async function toggleCalendarVisibility(connectionId: string, enabled: boolean): Promise<void> {
+  // ── REAL ──
+  // const { error } = await supabase
+  //   .from("calendar_connections")
+  //   .update({ is_enabled: enabled })
+  //   .eq("id", connectionId);
+  // if (error) throw new Error(error.message);
+
+  // ── PLACEHOLDER ──
+  void connectionId; void enabled;
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
 /** PATCH /api/calendars/:id/email-watch — Toggles email inbox watching for a connection. */
-export async function toggleEmailWatch(_connectionId: string, _enabled: boolean): Promise<void> {
-  await delay(300);
+export async function toggleEmailWatch(connectionId: string, enabled: boolean): Promise<void> {
+  // ── REAL ──
+  // const { error } = await supabase
+  //   .from("calendar_connections")
+  //   .update({ email_watch_enabled: enabled })
+  //   .eq("id", connectionId);
+  // if (error) throw new Error(error.message);
+
+  // ── PLACEHOLDER ──
+  void connectionId; void enabled;
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
 // ─────────────────────────────────────────────
@@ -399,27 +424,65 @@ export async function toggleEmailWatch(_connectionId: string, _enabled: boolean)
 
 /** GET /api/timezones — Fetches all supported timezones, ordered by UTC offset. */
 export async function getTimezones(): Promise<Timezone[]> {
-  await delay();
-  return MOCK_TIMEZONES;
+  // ── REAL ──
+  // const { data, error } = await supabase
+  //   .from("timezones")
+  //   .select("*")
+  //   .order("utc_offset", { ascending: true });
+  // if (error) throw new Error(error.message);
+  // return data as Timezone[];
+
+  // ── PLACEHOLDER ──
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
 // ─────────────────────────────────────────────
 // API Functions: User Settings
 // ─────────────────────────────────────────────
 
-/** GET /api/user/settings — Fetches user preferences (timezone, display, detection mode). */
+/** GET /api/user/settings — Fetches user preferences. */
 export async function getUserSettings(): Promise<UserSettings> {
-  await delay();
-  return MOCK_SETTINGS;
+  // ── REAL ──
+  // const { data: { user } } = await supabase.auth.getUser();
+  // if (!user) throw new Error("Not authenticated");
+  // const { data, error } = await supabase
+  //   .from("user_settings")
+  //   .select("*")
+  //   .eq("user_id", user.id)
+  //   .single();
+  // if (error) throw new Error(error.message);
+  // return mapSettingsRow(data);
+
+  // ── PLACEHOLDER ──
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
 /** PATCH /api/user/settings — Partially updates user preferences. Returns the merged result. */
 export async function updateUserSettings(settings: Partial<UserSettings>): Promise<UserSettings> {
-  await delay(500);
-  return { ...MOCK_SETTINGS, ...settings };
+  // ── REAL ──
+  // const { data: { user } } = await supabase.auth.getUser();
+  // if (!user) throw new Error("Not authenticated");
+  // const columns = toSettingsColumns(settings);
+  // const { data, error } = await supabase
+  //   .from("user_settings")
+  //   .update(columns)
+  //   .eq("user_id", user.id)
+  //   .select()
+  //   .single();
+  // if (error) throw new Error(error.message);
+  // return mapSettingsRow(data);
+
+  // ── PLACEHOLDER ──
+  void settings;
+  throw new Error(BACKEND_NOT_CONNECTED);
 }
 
-/** DELETE /api/user/data — Permanently deletes all user data (connections, settings, history). */
+/** DELETE /api/user/data — Permanently deletes all user data via Edge Function. */
 export async function deleteAllUserData(): Promise<void> {
-  await delay(1000);
+  // ── REAL ──
+  // const { error } = await supabase.functions.invoke("delete-user-data");
+  // if (error) throw new Error(error.message);
+
+  // ── PLACEHOLDER ──
+  throw new Error(BACKEND_NOT_CONNECTED);
 }

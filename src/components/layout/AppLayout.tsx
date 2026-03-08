@@ -8,9 +8,12 @@
  *
  * Tab switching is state-driven (not route-driven) because all views
  * share the same data context and benefit from staying mounted.
+ *
+ * Passes `onTabChange` to child views that need to trigger tab switches
+ * (e.g. TodayView's "Review" banner navigates to the Inbox tab).
  */
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Sun, CalendarDays, Grid3X3, Inbox, Layers, Settings } from "lucide-react";
 import { TabId } from "@/types";
 import TodayView from "@/components/calendar/TodayView";
@@ -33,6 +36,12 @@ export default function AppLayout() {
   const [activeTab, setActiveTab] = useState<TabId>("today");
   const [showSettings, setShowSettings] = useState(false);
 
+  /** Navigate to a specific tab, dismissing Settings if open. */
+  const handleTabChange = useCallback((tabId: TabId) => {
+    setActiveTab(tabId);
+    setShowSettings(false);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
 
@@ -53,7 +62,7 @@ export default function AppLayout() {
             return (
               <button
                 key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setShowSettings(false); }}
+                onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-2 px-4 h-10 rounded-full text-sm font-medium transition-colors ${
                   activeTab === tab.id && !showSettings ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
                 }`}
@@ -81,7 +90,7 @@ export default function AppLayout() {
           <SettingsView />
         ) : (
           <>
-            {activeTab === "today" && <TodayView />}
+            {activeTab === "today" && <TodayView onTabChange={handleTabChange} />}
             {activeTab === "week" && <WeekView />}
             {activeTab === "month" && <MonthView />}
             {activeTab === "inbox" && <InboxView />}
@@ -98,7 +107,7 @@ export default function AppLayout() {
           return (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setShowSettings(false); }}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex flex-col items-center justify-center w-full py-2 min-h-[var(--min-tap)] transition-colors ${
                 isActive ? "text-[hsl(var(--fuse-primary))]" : "text-muted-foreground"
               }`}

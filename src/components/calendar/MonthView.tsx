@@ -8,6 +8,7 @@
  * Design decisions:
  * - Dots are capped at 3 per day: more than 3 become visually indistinguishable at small sizes.
  * - Dots use the event's source color for quick visual identification.
+ * - Shows a loading skeleton while event data is being fetched, consistent with other views.
  */
 
 import { useState } from "react";
@@ -15,6 +16,7 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addM
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useWeekEvents } from "@/hooks/useEvents";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { EventListSkeleton } from "@/components/shared/EventSkeleton";
 import { CalendarEvent } from "@/types";
 import { EventCard } from "@/components/shared/EventCard";
 import { EventDetailSheet } from "@/components/shared/EventDetailSheet";
@@ -22,7 +24,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 
 export default function MonthView() {
   const [monthOffset, setMonthOffset] = useState(0);
-  const { data: events, isError, refetch } = useWeekEvents();
+  const { data: events, isLoading, isError, refetch } = useWeekEvents();
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
@@ -79,40 +81,47 @@ export default function MonthView() {
         ))}
       </div>
 
-      {/* Calendar grid — each cell is a day button with optional event dots */}
-      {isError && (
+      {/* Loading / Error states */}
+      {isLoading && (
+        <div className="px-5"><EventListSkeleton count={5} /></div>
+      )}
+
+      {!isLoading && isError && (
         <div className="px-5"><ErrorState message="Couldn't load events" onRetry={refetch} /></div>
       )}
 
-      <div className="flex-1 px-5 space-y-1">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7 gap-0">
-            {week.map((d) => {
-              const dots = getDotsForDay(d);
-              const inMonth = isSameMonth(d, currentMonth);
-              const today = isToday(d);
-              return (
-                <button
-                  key={d.toISOString()}
-                  onClick={() => setSelectedDay(d)}
-                  className={`flex flex-col items-center justify-center py-2 min-h-[3rem] rounded-xl transition-colors ${
-                    today ? "bg-[hsl(var(--fuse-primary))] text-white" : inMonth ? "text-foreground hover:bg-muted" : "text-muted-foreground/40"
-                  }`}
-                >
-                  <span className="text-sm font-medium">{format(d, "d")}</span>
-                  {dots.length > 0 && (
-                    <div className="flex gap-0.5 mt-0.5">
-                      {dots.map((color, i) => (
-                        <div key={i} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-                      ))}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        ))}
-      </div>
+      {/* Calendar grid — each cell is a day button with optional event dots */}
+      {!isLoading && !isError && (
+        <div className="flex-1 px-5 space-y-1">
+          {weeks.map((week, wi) => (
+            <div key={wi} className="grid grid-cols-7 gap-0">
+              {week.map((d) => {
+                const dots = getDotsForDay(d);
+                const inMonth = isSameMonth(d, currentMonth);
+                const today = isToday(d);
+                return (
+                  <button
+                    key={d.toISOString()}
+                    onClick={() => setSelectedDay(d)}
+                    className={`flex flex-col items-center justify-center py-2 min-h-[3rem] rounded-xl transition-colors ${
+                      today ? "bg-[hsl(var(--fuse-primary))] text-white" : inMonth ? "text-foreground hover:bg-muted" : "text-muted-foreground/40"
+                    }`}
+                  >
+                    <span className="text-sm font-medium">{format(d, "d")}</span>
+                    {dots.length > 0 && (
+                      <div className="flex gap-0.5 mt-0.5">
+                        {dots.map((color, i) => (
+                          <div key={i} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Day detail drawer — opens when a day cell is tapped */}
       <Sheet open={!!selectedDay} onOpenChange={(o) => !o && setSelectedDay(null)}>
