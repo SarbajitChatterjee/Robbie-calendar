@@ -14,7 +14,7 @@
  * - Throw standard errors — TanStack Query handles them upstream
  */
 
-import { CalendarEvent, CalendarConnection, UserSettings } from "@/types";
+import { CalendarEvent, CalendarConnection, UserSettings, Timezone } from "@/types";
 import { addDays, startOfWeek, format, setHours, setMinutes } from "date-fns";
 
 // ─────────────────────────────────────────────
