@@ -14,6 +14,7 @@ import { useState } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, isSameMonth, isSameDay, isToday, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useWeekEvents } from "@/hooks/useEvents";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { CalendarEvent } from "@/types";
 import { EventCard } from "@/components/shared/EventCard";
 import { EventDetailSheet } from "@/components/shared/EventDetailSheet";
