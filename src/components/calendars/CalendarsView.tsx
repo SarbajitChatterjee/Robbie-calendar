@@ -12,6 +12,7 @@ import { CalendarConnection } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { EventListSkeleton } from "@/components/shared/EventSkeleton";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { ChevronRight, AlertTriangle, Plus, Server } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
