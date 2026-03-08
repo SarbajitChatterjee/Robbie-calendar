@@ -1,3 +1,10 @@
+/**
+ * EmptyState — A friendly placeholder for empty views.
+ *
+ * Shows an emoji, a title, and an optional subtitle.
+ * Used across TodayView (no events), InboxView (no invitations), etc.
+ */
+
 interface EmptyStateProps {
   emoji: string;
   title: string;

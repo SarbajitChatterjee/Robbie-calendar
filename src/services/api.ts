@@ -1,22 +1,42 @@
 /**
- * Fuse Calendar — Service Layer
- * This is the ONLY file the backend engineer touches when wiring up a real server.
- * All functions return mock data. Each has a JSDoc with the intended endpoint path.
+ * Robbie — Service Layer
+ *
+ * ⭐ THIS IS THE ONLY FILE THE BACKEND ENGINEER MODIFIES.
+ *
+ * Every function in this file:
+ * 1. Has a JSDoc with the intended REST endpoint
+ * 2. Returns typed data matching interfaces in src/types/index.ts
+ * 3. Currently returns mock data with simulated network delay
+ *
+ * To wire up the real backend:
+ * - Replace the mock return with a fetch() / supabase call
+ * - Keep the function signature identical
+ * - Throw standard errors — TanStack Query handles them upstream
  */
 
 import { CalendarEvent, CalendarConnection, UserSettings } from "@/types";
 import { addDays, startOfWeek, format, setHours, setMinutes } from "date-fns";
 
-// Helper to get dates relative to "today"
+// ─────────────────────────────────────────────
+// Helpers for generating mock dates relative to "today"
+// ─────────────────────────────────────────────
+
 const today = () => new Date();
+
+/** Creates an ISO date string offset by `dayOffset` days, set to `hour:minute`. */
 const makeDate = (dayOffset: number, hour: number, minute = 0) => {
   const d = addDays(today(), dayOffset);
   return setMinutes(setHours(d, hour), minute).toISOString();
 };
 
+// Calculate Monday offset so mock events always align to the current week
 const weekStart = startOfWeek(today(), { weekStartsOn: 1 });
-const dayOfWeek = today().getDay(); // 0=Sun
+const dayOfWeek = today().getDay(); // 0 = Sunday
 const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+// ─────────────────────────────────────────────
+// Mock Data: Calendar Events
+// ─────────────────────────────────────────────
 
 const MOCK_EVENTS: CalendarEvent[] = [
   {
@@ -140,6 +160,10 @@ const MOCK_EVENTS: CalendarEvent[] = [
   },
 ];
 
+// ─────────────────────────────────────────────
+// Mock Data: Pending Email-Detected Events
+// ─────────────────────────────────────────────
+
 const MOCK_PENDING_EVENTS: CalendarEvent[] = [
   {
     id: "pending-1",
@@ -194,6 +218,10 @@ const MOCK_PENDING_EVENTS: CalendarEvent[] = [
   },
 ];
 
+// ─────────────────────────────────────────────
+// Mock Data: Calendar Connections
+// ─────────────────────────────────────────────
+
 const MOCK_CONNECTIONS: CalendarConnection[] = [
   {
     id: "conn-google",
@@ -247,6 +275,10 @@ const MOCK_CONNECTIONS: CalendarConnection[] = [
   },
 ];
 
+// ─────────────────────────────────────────────
+// Mock Data: User Settings
+// ─────────────────────────────────────────────
+
 const MOCK_SETTINGS: UserSettings = {
   userId: "user-1",
   homeTimezone: "Asia/Singapore",
@@ -259,21 +291,30 @@ const MOCK_SETTINGS: UserSettings = {
   darkMode: false,
 };
 
+// ─────────────────────────────────────────────
+// Network simulation helper
+// ─────────────────────────────────────────────
+
+/** Simulates network latency. Replace with real API calls when backend is ready. */
 const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
 
-/** GET /api/events?start=&end=&timezone= */
+// ─────────────────────────────────────────────
+// API Functions: Events
+// ─────────────────────────────────────────────
+
+/** GET /api/events?start=&end=&timezone= — Fetches all confirmed events in a date range. */
 export async function getEventsForDateRange(_start: Date, _end: Date): Promise<CalendarEvent[]> {
   await delay();
   return MOCK_EVENTS;
 }
 
-/** GET /api/events/pending-inbox */
+/** GET /api/events/pending-inbox — Fetches events detected from email that need user review. */
 export async function getPendingEmailEvents(): Promise<CalendarEvent[]> {
   await delay();
   return MOCK_PENDING_EVENTS;
 }
 
-/** POST /api/events/accept */
+/** POST /api/events/accept — Accepts a pending event and adds it to the target calendar. */
 export async function acceptEmailEvent(eventId: string, _targetCalendarId: string): Promise<CalendarEvent> {
   await delay(500);
   const evt = MOCK_PENDING_EVENTS.find((e) => e.id === eventId);
@@ -281,73 +322,81 @@ export async function acceptEmailEvent(eventId: string, _targetCalendarId: strin
   return { ...evt, acceptanceStatus: "accepted" };
 }
 
-/** POST /api/events/dismiss */
+/** POST /api/events/dismiss — Dismisses a pending event (user chose to ignore it). */
 export async function dismissEmailEvent(_eventId: string): Promise<void> {
   await delay(500);
 }
 
-/** GET /api/calendars */
+// ─────────────────────────────────────────────
+// API Functions: Calendar Connections
+// ─────────────────────────────────────────────
+
+/** GET /api/calendars — Fetches all connected calendar accounts for the current user. */
 export async function getCalendarConnections(): Promise<CalendarConnection[]> {
   await delay();
   return MOCK_CONNECTIONS;
 }
 
-/** POST /api/calendars/connect/oauth */
+/** POST /api/calendars/connect/oauth — Initiates OAuth flow for Google or Outlook. Returns a redirect URL. */
 export async function initiateOAuthConnection(_source: "google" | "outlook"): Promise<{ redirectUrl: string }> {
   await delay(500);
   return { redirectUrl: "#" };
 }
 
-/** POST /api/calendars/connect/apple */
+/** POST /api/calendars/connect/apple — Connects an Apple iCloud calendar via app-specific password. */
 export async function connectAppleCalendar(_appleId: string, _appPassword: string): Promise<CalendarConnection> {
   await delay(800);
   return MOCK_CONNECTIONS[1];
 }
 
-/** POST /api/calendars/connect/caldav */
+/** POST /api/calendars/connect/caldav — Connects a generic CalDAV server. */
 export async function connectCalDAV(_serverUrl: string, _username: string, _password: string): Promise<CalendarConnection> {
   await delay(800);
   return { ...MOCK_CONNECTIONS[0], id: "conn-caldav", source: "caldav", displayName: "CalDAV Server" };
 }
 
-/** DELETE /api/calendars/:id */
+/** DELETE /api/calendars/:id — Disconnects a calendar source and removes all associated data. */
 export async function disconnectCalendar(_connectionId: string): Promise<void> {
   await delay(500);
 }
 
-/** POST /api/calendars/:id/sync */
+/** POST /api/calendars/:id/sync — Triggers an immediate sync for one or all connections. */
 export async function syncNow(_connectionId?: string): Promise<void> {
   await delay(1000);
 }
 
-/** PATCH /api/calendars/:id/color */
+/** PATCH /api/calendars/:id/color — Updates the display color for a calendar connection. */
 export async function updateCalendarColor(_connectionId: string, _color: string): Promise<void> {
   await delay(300);
 }
 
-/** PATCH /api/calendars/:id/visibility */
+/** PATCH /api/calendars/:id/visibility — Toggles whether a calendar's events appear in views. */
 export async function toggleCalendarVisibility(_connectionId: string, _enabled: boolean): Promise<void> {
   await delay(300);
 }
 
-/** PATCH /api/calendars/:id/email-watch */
+/** PATCH /api/calendars/:id/email-watch — Toggles email inbox watching for a connection. */
 export async function toggleEmailWatch(_connectionId: string, _enabled: boolean): Promise<void> {
   await delay(300);
 }
 
-/** GET /api/user/settings */
+// ─────────────────────────────────────────────
+// API Functions: User Settings
+// ─────────────────────────────────────────────
+
+/** GET /api/user/settings — Fetches user preferences (timezone, display, detection mode). */
 export async function getUserSettings(): Promise<UserSettings> {
   await delay();
   return MOCK_SETTINGS;
 }
 
-/** PATCH /api/user/settings */
+/** PATCH /api/user/settings — Partially updates user preferences. Returns the merged result. */
 export async function updateUserSettings(settings: Partial<UserSettings>): Promise<UserSettings> {
   await delay(500);
   return { ...MOCK_SETTINGS, ...settings };
 }
 
-/** DELETE /api/user/data */
+/** DELETE /api/user/data — Permanently deletes all user data (connections, settings, history). */
 export async function deleteAllUserData(): Promise<void> {
   await delay(1000);
 }

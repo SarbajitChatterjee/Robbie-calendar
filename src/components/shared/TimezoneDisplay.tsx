@@ -1,3 +1,14 @@
+/**
+ * TimezoneDisplay — Shows timezone information with optional comparison.
+ *
+ * Two modes:
+ * - Full: Shows user's timezone and (if different) the organizer's timezone below it.
+ * - Compact: Single-line inline display with a globe icon.
+ *
+ * Also exports TimezonePill — a standalone rounded pill showing the user's timezone,
+ * used in the TodayView header.
+ */
+
 import { Globe } from "lucide-react";
 
 interface TimezoneDisplayProps {
@@ -7,6 +18,7 @@ interface TimezoneDisplayProps {
   compact?: boolean;
 }
 
+/** Abbreviation lookup for common timezones. Falls back to the city name. */
 const tzAbbreviations: Record<string, string> = {
   "Asia/Singapore": "SGT",
   "Europe/Berlin": "CET",
@@ -16,6 +28,7 @@ const tzAbbreviations: Record<string, string> = {
   "Asia/Tokyo": "JST",
 };
 
+/** UTC offset lookup for display purposes. */
 const tzOffsets: Record<string, string> = {
   "Asia/Singapore": "UTC+8",
   "Europe/Berlin": "UTC+1",
@@ -25,6 +38,7 @@ const tzOffsets: Record<string, string> = {
   "Asia/Tokyo": "UTC+9",
 };
 
+/** Formats a timezone string into abbreviation, offset, and full display string. */
 function formatTz(tz: string) {
   const abbr = tzAbbreviations[tz] || tz.split("/").pop()?.replace("_", " ") || tz;
   const offset = tzOffsets[tz] || "";
@@ -59,6 +73,7 @@ export function TimezoneDisplay({ userTimezone, organizerTimezone, showOrganizer
   );
 }
 
+/** TimezonePill — Compact rounded pill showing the user's timezone. Used in view headers. */
 export function TimezonePill({ timezone }: { timezone: string }) {
   const { full } = formatTz(timezone);
   return (

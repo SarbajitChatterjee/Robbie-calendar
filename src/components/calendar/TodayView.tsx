@@ -1,5 +1,13 @@
+/**
+ * TodayView — The "Today" tab showing events for the current day.
+ *
+ * Groups today's events into time-of-day sections (All Day, Morning,
+ * Afternoon, Evening) for easy scanning. Also shows a banner when
+ * there are pending email invitations awaiting review.
+ */
+
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, parseISO, isToday } from "date-fns";
 import { Plus, Mail } from "lucide-react";
 import { useWeekEvents, usePendingInbox } from "@/hooks/useEvents";
 import { useUserSettings } from "@/hooks/useUserSettings";
@@ -10,13 +18,13 @@ import { EventListSkeleton } from "@/components/shared/EventSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { TimezonePill } from "@/components/shared/TimezoneDisplay";
 import { Button } from "@/components/ui/button";
-import { parseISO, isToday } from "date-fns";
 
+/**
+ * Filters events to today and splits them into time-of-day buckets.
+ * Morning: before 12pm, Afternoon: 12pm–5pm, Evening: after 5pm.
+ */
 function groupEvents(events: CalendarEvent[]) {
-  const todayEvents = events.filter((e) => {
-    const start = parseISO(e.start);
-    return isToday(start);
-  });
+  const todayEvents = events.filter((e) => isToday(parseISO(e.start)));
 
   const allDay = todayEvents.filter((e) => e.isAllDay);
   const morning = todayEvents.filter((e) => !e.isAllDay && parseISO(e.start).getHours() < 12);
@@ -38,7 +46,7 @@ export default function TodayView() {
 
   return (
     <div className="flex flex-col min-h-full">
-      {/* Header */}
+      {/* Header with date and timezone pill */}
       <header className="px-5 pt-6 pb-4 space-y-2">
         <h1 className="text-[28px] font-bold text-foreground">
           Today, {format(new Date(), "EEEE d MMMM")}
@@ -46,7 +54,7 @@ export default function TodayView() {
         {settings && <TimezonePill timezone={settings.homeTimezone} />}
       </header>
 
-      {/* Email invitation banner */}
+      {/* Email invitation banner — visible when pending events exist */}
       {pendingCount > 0 && (
         <div className="mx-5 mb-4 rounded-[var(--radius-card)] bg-[hsl(38,92%,95%)] border border-[hsl(38,92%,80%)] p-4 flex items-center gap-3">
           <Mail className="w-5 h-5 text-[hsl(var(--status-warning))] flex-shrink-0" />
@@ -59,7 +67,7 @@ export default function TodayView() {
         </div>
       )}
 
-      {/* Events */}
+      {/* Event list grouped by time of day */}
       <div className="flex-1 px-5 pb-24 space-y-6">
         {isLoading && <EventListSkeleton />}
 
@@ -81,7 +89,7 @@ export default function TodayView() {
         )}
       </div>
 
-      {/* FAB */}
+      {/* Floating Action Button — triggers event creation (not yet wired) */}
       <button className="fixed bottom-24 right-5 w-14 h-14 rounded-full bg-[hsl(var(--fuse-primary))] text-white shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity z-30 md:bottom-8">
         <Plus className="w-6 h-6" />
       </button>
@@ -91,6 +99,7 @@ export default function TodayView() {
   );
 }
 
+/** Renders a labeled section of event cards. Hidden when the section has no events. */
 function EventSection({ title, events, onTap }: { title: string; events: CalendarEvent[]; onTap: (e: CalendarEvent) => void }) {
   if (events.length === 0) return null;
   return (

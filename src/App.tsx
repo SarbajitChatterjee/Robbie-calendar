@@ -1,3 +1,15 @@
+/**
+ * App.tsx — Root application component.
+ *
+ * Sets up the provider stack in the correct order:
+ * 1. QueryClientProvider — TanStack Query cache for all data fetching
+ * 2. TooltipProvider — Required by shadcn/ui tooltip components
+ * 3. Toaster/Sonner — Toast notification outlets (two systems for flexibility)
+ * 4. BrowserRouter — Client-side routing
+ *
+ * All custom routes must be added ABOVE the catch-all "*" route.
+ */
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";

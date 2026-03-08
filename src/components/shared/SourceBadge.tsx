@@ -1,3 +1,11 @@
+/**
+ * SourceBadge — A colored pill showing the calendar source provider.
+ *
+ * Displays the provider name (Google, Apple, Outlook, etc.) alongside
+ * the calendar name, with provider-specific background colors.
+ * Used in EventCard and EventDetailSheet for source identification.
+ */
+
 import { CalendarEvent } from "@/types";
 
 interface SourceBadgeProps {
@@ -6,6 +14,7 @@ interface SourceBadgeProps {
   className?: string;
 }
 
+/** Visual config per source: display label and Tailwind color classes. */
 const sourceConfig: Record<string, { label: string; bgClass: string }> = {
   google: { label: "Google", bgClass: "bg-[hsl(217,91%,93%)] text-[hsl(217,91%,40%)]" },
   apple: { label: "Apple", bgClass: "bg-[hsl(0,75%,93%)] text-[hsl(0,75%,40%)]" },
@@ -24,6 +33,7 @@ export function SourceBadge({ source, calendarName, className = "" }: SourceBadg
   );
 }
 
+/** Small colored circle icon representing a calendar source. */
 function SourceIcon({ source }: { source: string }) {
   const size = "w-3 h-3";
   switch (source) {

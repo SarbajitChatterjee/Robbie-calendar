@@ -1,3 +1,14 @@
+/**
+ * InboxView — The "Inbox" tab for reviewing email-detected events.
+ *
+ * Shows two sub-tabs:
+ * - "Pending Review": events detected from emails awaiting user action
+ * - "Already Added": events the user has accepted
+ *
+ * Accept/dismiss actions are optimistic (local state updates immediately).
+ * The service layer calls happen in the background via the API functions.
+ */
+
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { usePendingInbox } from "@/hooks/useEvents";
@@ -6,16 +17,19 @@ import { EventDetailSheet } from "@/components/shared/EventDetailSheet";
 import { EventListSkeleton } from "@/components/shared/EventSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Button } from "@/components/ui/button";
-import { MapPin, Link2, Users, Clock, FileText, Mail } from "lucide-react";
+import { MapPin, Link2, Users, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export default function InboxView() {
   const { data: pendingEvents, isLoading } = usePendingInbox();
   const [activeTab, setActiveTab] = useState<"pending" | "added">("pending");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+
+  // Track accepted/dismissed IDs locally for optimistic UI updates
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [accepted, setAccepted] = useState<Set<string>>(new Set());
 
+  // Filter events based on local acceptance/dismissal state
   const pending = pendingEvents?.filter((e) => !dismissed.has(e.id) && !accepted.has(e.id)) ?? [];
   const addedEvents = pendingEvents?.filter((e) => accepted.has(e.id)) ?? [];
 
@@ -31,6 +45,7 @@ export default function InboxView() {
 
   return (
     <div className="flex flex-col min-h-full">
+      {/* Header with pending count badge */}
       <header className="px-5 pt-6 pb-4">
         <h1 className="text-[28px] font-bold text-foreground">
           Event Invitations
@@ -42,7 +57,7 @@ export default function InboxView() {
         </h1>
       </header>
 
-      {/* Tabs */}
+      {/* Tab switcher: Pending Review / Already Added */}
       <div className="flex px-5 gap-2 mb-4">
         {(["pending", "added"] as const).map((tab) => (
           <button
@@ -57,6 +72,7 @@ export default function InboxView() {
         ))}
       </div>
 
+      {/* Tab content */}
       <div className="flex-1 px-5 pb-24 space-y-4">
         {isLoading && <EventListSkeleton />}
 
@@ -104,6 +120,13 @@ export default function InboxView() {
   );
 }
 
+/**
+ * PendingCard — A rich card for a single pending email-detected event.
+ *
+ * Shows detection method badge (ICS attachment vs smart detection),
+ * event metadata (time, location, meeting link, attendees),
+ * and accept/dismiss action buttons.
+ */
 function PendingCard({ event, onTap, onAccept, onDismiss }: {
   event: CalendarEvent;
   onTap: () => void;
@@ -113,6 +136,7 @@ function PendingCard({ event, onTap, onAccept, onDismiss }: {
   const start = parseISO(event.start);
   return (
     <button onClick={onTap} className="w-full text-left rounded-[var(--radius-card)] bg-card p-5 shadow-[0_2px_8px_hsl(var(--shadow-soft))] space-y-3 hover:shadow-[0_4px_16px_hsl(var(--shadow-medium))] transition-shadow">
+      {/* Title + detection method badge */}
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold text-lg text-foreground">{event.title}</h3>
         <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
@@ -128,6 +152,7 @@ function PendingCard({ event, onTap, onAccept, onDismiss }: {
         From: {event.emailSender} via your Gmail
       </p>
 
+      {/* Metadata grid: time, location, meeting link, attendees */}
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div className="flex items-center gap-1.5 text-muted-foreground">
           <Clock className="w-3.5 h-3.5" />
@@ -147,6 +172,7 @@ function PendingCard({ event, onTap, onAccept, onDismiss }: {
         </div>
       </div>
 
+      {/* Action buttons — stopPropagation prevents triggering the card's onTap */}
       <div className="flex gap-3 pt-1" onClick={(e) => e.stopPropagation()}>
         <Button
           onClick={onAccept}

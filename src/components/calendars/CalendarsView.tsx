@@ -1,13 +1,23 @@
+/**
+ * CalendarsView — The "Calendars" tab for managing connected accounts.
+ *
+ * Organized into three sections:
+ * A. Connected Calendars — shows existing connections with sync status and toggle
+ * B. Add a Source — cards for connecting new providers (Google, Apple, Outlook, etc.)
+ * C. Privacy & Data — collapsible section explaining data handling + danger zone actions
+ */
+
 import { useCalendars } from "@/hooks/useCalendars";
 import { CalendarConnection } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { EventListSkeleton } from "@/components/shared/EventSkeleton";
-import { ChevronRight, AlertTriangle, RefreshCw, Lock, Server, Plus } from "lucide-react";
+import { ChevronRight, AlertTriangle, Plus, Server } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
+/** Icon config for each calendar source type. */
 const sourceIcons: Record<string, { bg: string; label: string }> = {
   google: { bg: "bg-[hsl(217,91%,93%)]", label: "G" },
   apple: { bg: "bg-[hsl(0,75%,93%)]", label: "🍎" },
@@ -16,6 +26,7 @@ const sourceIcons: Record<string, { bg: string; label: string }> = {
   gmail: { bg: "bg-[hsl(4,90%,93%)]", label: "M" },
 };
 
+/** Badge labels for connection types (calendar only, email watch, or both). */
 const connectionBadge: Record<string, { label: string; color: string }> = {
   calendar: { label: "Calendar", color: "bg-[hsl(217,91%,90%)] text-[hsl(217,91%,40%)]" },
   email_watch: { label: "Email Watch", color: "bg-[hsl(38,92%,88%)] text-[hsl(38,70%,35%)]" },
@@ -32,14 +43,14 @@ export default function CalendarsView() {
         <h1 className="text-[28px] font-bold text-foreground">Calendars</h1>
       </header>
 
-      {/* Section A: Connected */}
+      {/* Section A: Connected calendar accounts */}
       <section className="px-5 space-y-3 mb-8">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Your Connected Calendars</h2>
         {isLoading && <EventListSkeleton count={3} />}
         {connections?.map((conn) => <ConnectionRow key={conn.id} connection={conn} />)}
       </section>
 
-      {/* Section B: Add Source */}
+      {/* Section B: Add new source cards */}
       <section className="px-5 space-y-3 mb-8">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Add a Source</h2>
         <div className="grid grid-cols-2 gap-3">
@@ -55,7 +66,7 @@ export default function CalendarsView() {
         </div>
       </section>
 
-      {/* Section C: Privacy */}
+      {/* Section C: Privacy & data management */}
       <section className="px-5">
         <Collapsible open={privacyOpen} onOpenChange={setPrivacyOpen}>
           <CollapsibleTrigger className="w-full rounded-[var(--radius-card)] bg-card p-4 shadow-[0_2px_8px_hsl(var(--shadow-soft))] flex items-center justify-between">
@@ -78,6 +89,13 @@ export default function CalendarsView() {
   );
 }
 
+/**
+ * ConnectionRow — Displays a single connected calendar account.
+ *
+ * Shows: source icon, display name, account email, sync status (with
+ * relative timestamp), connection type badge, color indicator, and
+ * an enable/disable toggle switch.
+ */
 function ConnectionRow({ connection }: { connection: CalendarConnection }) {
   const icon = sourceIcons[connection.source];
   const badge = connectionBadge[connection.connectionType];
@@ -104,12 +122,14 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
           {syncLabel}
         </p>
       </div>
+      {/* Color indicator strip */}
       <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: connection.color }} />
       <Switch defaultChecked={connection.isEnabled} />
     </div>
   );
 }
 
+/** SourceCard — A clickable card for adding a new calendar source. */
 function SourceCard({ icon, name, subtitle, badge, iconBg }: {
   icon: string | React.ReactNode;
   name: string;
@@ -120,7 +140,7 @@ function SourceCard({ icon, name, subtitle, badge, iconBg }: {
   return (
     <button className="rounded-[var(--radius-card)] bg-card p-4 shadow-[0_2px_8px_hsl(var(--shadow-soft))] flex flex-col items-center text-center space-y-2 hover:shadow-[0_4px_16px_hsl(var(--shadow-medium))] transition-shadow min-h-[var(--min-tap)]">
       <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center text-sm font-bold`}>
-        {typeof icon === "string" ? icon : icon}
+        {icon}
       </div>
       <p className="font-medium text-sm text-foreground">{name}</p>
       <p className="text-xs text-muted-foreground">{subtitle}</p>

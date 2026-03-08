@@ -1,3 +1,11 @@
+/**
+ * JoinButton — Platform-specific "Join Meeting" button.
+ *
+ * Renders either a compact inline button (for event cards) or a full-width
+ * prominent button (for the event detail sheet). The button color and label
+ * change based on the meeting platform (Zoom, Teams, Google Meet).
+ */
+
 import { Video, Users, MonitorSmartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -7,6 +15,7 @@ interface JoinButtonProps {
   compact?: boolean;
 }
 
+/** Platform-specific visual config: label, icon, and button color. */
 const platformConfig = {
   zoom: { label: "Zoom", icon: Video, color: "bg-[hsl(217,91%,60%)] hover:bg-[hsl(217,91%,50%)]" },
   teams: { label: "Teams", icon: Users, color: "bg-[hsl(262,52%,47%)] hover:bg-[hsl(262,52%,40%)]" },

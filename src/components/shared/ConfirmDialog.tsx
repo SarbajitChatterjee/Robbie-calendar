@@ -1,3 +1,10 @@
+/**
+ * ConfirmDialog — A generic confirmation dialog for destructive or important actions.
+ *
+ * Built on top of shadcn AlertDialog. Supports optional destructive styling
+ * for the confirm button (red background for delete/disconnect actions).
+ */
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +23,7 @@ interface ConfirmDialogProps {
   description: string;
   confirmLabel?: string;
   onConfirm: () => void;
+  /** When true, the confirm button uses destructive (red) styling. */
   destructive?: boolean;
 }
 
