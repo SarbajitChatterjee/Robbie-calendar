@@ -35,7 +35,7 @@ const connectionBadge: Record<string, { label: string; color: string }> = {
 };
 
 export default function CalendarsView() {
-  const { data: connections, isLoading } = useCalendars();
+  const { data: connections, isLoading, isError, refetch } = useCalendars();
   const [privacyOpen, setPrivacyOpen] = useState(false);
 
   return (
