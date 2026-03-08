@@ -36,7 +36,7 @@ function groupEvents(events: CalendarEvent[]) {
 }
 
 export default function TodayView() {
-  const { data: events, isLoading } = useWeekEvents();
+  const { data: events, isLoading, isError, refetch } = useWeekEvents();
   const { data: pendingEvents } = usePendingInbox();
   const { data: settings } = useUserSettings();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
