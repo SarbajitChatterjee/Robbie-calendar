@@ -1,6 +1,21 @@
+/**
+ * EventDetailSheet — Full event detail view in a bottom sheet.
+ *
+ * Shows comprehensive event information: time, timezone comparison,
+ * meeting join button, location, attendees, and description.
+ * Action buttons change based on event status:
+ * - Pending: Accept / Dismiss
+ * - Read-only: Copy to my calendar
+ * - Editable: Edit / Delete
+ *
+ * Design decisions:
+ * - Attendees are capped at 5 to prevent layout overflow; a "Show all" link handles the rest.
+ * - The color strip at the top provides instant visual identification of the source calendar.
+ */
+
 import { CalendarEvent } from "@/types";
 import { format, parseISO, differenceInMinutes } from "date-fns";
-import { X, MapPin, ExternalLink } from "lucide-react";
+import { MapPin, ExternalLink } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { SourceBadge } from "./SourceBadge";
@@ -21,23 +36,28 @@ export function EventDetailSheet({ event, open, onClose, onAccept, onDismiss }: 
   const startDate = parseISO(event.start);
   const endDate = parseISO(event.end);
   const duration = differenceInMinutes(endDate, startDate);
-  const durationStr = duration >= 60 ? `${Math.floor(duration / 60)} hour${duration >= 120 ? "s" : ""}${duration % 60 ? ` ${duration % 60} min` : ""}` : `${duration} min`;
+
+  // Format duration as human-readable string (e.g., "1 hour 30 min")
+  const durationStr = duration >= 60
+    ? `${Math.floor(duration / 60)} hour${duration >= 120 ? "s" : ""}${duration % 60 ? ` ${duration % 60} min` : ""}`
+    : `${duration} min`;
+
   const isPending = event.acceptanceStatus === "pending_review";
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="bottom" className="rounded-t-[var(--radius-card)] max-h-[90vh] overflow-y-auto p-0">
-        {/* Color strip */}
+        {/* Color strip — matches source calendar color */}
         <div className="h-1.5 rounded-t-[var(--radius-card)]" style={{ backgroundColor: event.color }} />
 
         <div className="p-5 space-y-6">
-          {/* Header */}
+          {/* Header: title + source badge */}
           <SheetHeader className="space-y-2 p-0">
             <SheetTitle className="text-2xl font-bold text-foreground pr-8">{event.title}</SheetTitle>
             <SourceBadge source={event.source} calendarName={event.calendarName || "Detected from email"} />
           </SheetHeader>
 
-          {/* Time & Timezone */}
+          {/* Time & timezone section */}
           <section className="space-y-2">
             <p className="font-medium text-foreground">{format(startDate, "EEEE, d MMMM yyyy")}</p>
             {!event.isAllDay && (
@@ -55,7 +75,7 @@ export function EventDetailSheet({ event, open, onClose, onAccept, onDismiss }: 
             {event.isAllDay && <p className="text-sm text-muted-foreground">All day event</p>}
           </section>
 
-          {/* Join Meeting */}
+          {/* Join meeting section */}
           {event.meetingLink && (
             <section className="space-y-2">
               <JoinButton meetingLink={event.meetingLink} platform={event.meetingPlatform} />
@@ -71,7 +91,7 @@ export function EventDetailSheet({ event, open, onClose, onAccept, onDismiss }: 
             </section>
           )}
 
-          {/* Location */}
+          {/* Location with "Open in Maps" link */}
           {event.location && (
             <section className="flex items-start gap-2">
               <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
@@ -84,7 +104,7 @@ export function EventDetailSheet({ event, open, onClose, onAccept, onDismiss }: 
             </section>
           )}
 
-          {/* People */}
+          {/* Attendees section — capped at 5 to prevent layout overflow */}
           {(event.organizer || event.attendees?.length) && (
             <section className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground">People</h4>
@@ -112,7 +132,7 @@ export function EventDetailSheet({ event, open, onClose, onAccept, onDismiss }: 
             </section>
           )}
 
-          {/* Description */}
+          {/* Description + email snippet */}
           {event.description && (
             <section className="space-y-2">
               <h4 className="text-sm font-semibold text-foreground">About this event</h4>
@@ -126,7 +146,7 @@ export function EventDetailSheet({ event, open, onClose, onAccept, onDismiss }: 
             </section>
           )}
 
-          {/* Actions */}
+          {/* Action buttons — context-dependent */}
           <section className="flex gap-3 pt-2 pb-2">
             {isPending ? (
               <>
@@ -165,6 +185,12 @@ export function EventDetailSheet({ event, open, onClose, onAccept, onDismiss }: 
   );
 }
 
+/**
+ * PersonRow — Displays a single attendee or organizer.
+ *
+ * Shows: avatar (initials), name, email, optional role badge, and RSVP status.
+ * RSVP colors: green=accepted, red=declined, muted=pending/unknown.
+ */
 function PersonRow({ name, email, badge, rsvp, isYou }: {
   name: string;
   email: string;

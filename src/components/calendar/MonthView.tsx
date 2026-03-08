@@ -1,3 +1,15 @@
+/**
+ * MonthView — The "Month" tab showing a traditional calendar grid.
+ *
+ * Displays a 7-column grid (Mon–Sun) with event indicator dots on each day.
+ * Tapping a day opens a bottom sheet with that day's events.
+ * Supports month navigation (prev/next).
+ *
+ * Design decisions:
+ * - Dots are capped at 3 per day: more than 3 become visually indistinguishable at small sizes.
+ * - Dots use the event's source color for quick visual identification.
+ */
+
 import { useState } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, isSameMonth, isSameDay, isToday, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -13,12 +25,14 @@ export default function MonthView() {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
+  // Calculate the month boundaries and the full calendar grid range
   const currentMonth = addMonths(new Date(), monthOffset);
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Grid starts on Monday
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
+  // Build a 2D array of weeks, each containing 7 days
   const weeks: Date[][] = [];
   let day = calStart;
   while (day <= calEnd) {
@@ -30,6 +44,10 @@ export default function MonthView() {
     weeks.push(week);
   }
 
+  /**
+   * Returns up to 3 unique event colors for a given day.
+   * Used to render indicator dots below the day number.
+   */
   const getDotsForDay = (d: Date) => {
     if (!events) return [];
     const dayEvents = events.filter((e) => isSameDay(parseISO(e.start), d));
@@ -37,10 +55,12 @@ export default function MonthView() {
     return sources.slice(0, 3);
   };
 
+  // Events for the selected day (shown in the bottom sheet)
   const dayEvents = selectedDay && events ? events.filter((e) => isSameDay(parseISO(e.start), selectedDay)) : [];
 
   return (
     <div className="flex flex-col min-h-full">
+      {/* Month navigation header */}
       <header className="px-5 pt-6 pb-3 flex items-center justify-between">
         <button onClick={() => setMonthOffset((o) => o - 1)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted">
           <ChevronLeft className="w-5 h-5 text-foreground" />
@@ -51,14 +71,14 @@ export default function MonthView() {
         </button>
       </header>
 
-      {/* Weekday headers */}
+      {/* Weekday column headers */}
       <div className="grid grid-cols-7 px-5 pb-2">
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
           <div key={d} className="text-center text-xs font-medium text-muted-foreground">{d}</div>
         ))}
       </div>
 
-      {/* Calendar grid */}
+      {/* Calendar grid — each cell is a day button with optional event dots */}
       <div className="flex-1 px-5 space-y-1">
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7 gap-0">
@@ -89,7 +109,7 @@ export default function MonthView() {
         ))}
       </div>
 
-      {/* Day drawer */}
+      {/* Day detail drawer — opens when a day cell is tapped */}
       <Sheet open={!!selectedDay} onOpenChange={(o) => !o && setSelectedDay(null)}>
         <SheetContent side="bottom" className="rounded-t-[var(--radius-card)] max-h-[60vh] overflow-y-auto">
           <SheetHeader>

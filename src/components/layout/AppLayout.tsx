@@ -1,3 +1,15 @@
+/**
+ * AppLayout — The main application shell.
+ *
+ * Renders:
+ * - Desktop: horizontal top navigation bar with tab buttons
+ * - Mobile: fixed bottom tab bar with icons
+ * - Content area: switches between views based on activeTab state
+ *
+ * Tab switching is state-driven (not route-driven) because all views
+ * share the same data context and benefit from staying mounted.
+ */
+
 import { useState } from "react";
 import { Sun, CalendarDays, Grid3X3, Inbox, Layers, Settings } from "lucide-react";
 import { TabId } from "@/types";
@@ -8,6 +20,7 @@ import InboxView from "@/components/inbox/InboxView";
 import CalendarsView from "@/components/calendars/CalendarsView";
 import SettingsView from "@/pages/Settings";
 
+/** Tab configuration — order here determines render order in nav. */
 const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "today", label: "Today", icon: Sun },
   { id: "week", label: "Week", icon: CalendarDays },
@@ -22,14 +35,18 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Desktop top nav */}
+
+      {/* ── Desktop Top Navigation ────────────────────────── */}
       <nav className="hidden md:flex items-center justify-between px-6 h-16 border-b border-border bg-card">
+        {/* Brand */}
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-[hsl(var(--fuse-primary))] flex items-center justify-center">
             <span className="text-white font-bold text-sm">R</span>
           </div>
           <span className="font-bold text-lg text-foreground">Robbie</span>
         </div>
+
+        {/* Tab buttons + Settings */}
         <div className="flex items-center gap-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -58,7 +75,7 @@ export default function AppLayout() {
         </div>
       </nav>
 
-      {/* Content */}
+      {/* ── Content Area ──────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto">
         {showSettings ? (
           <SettingsView />
@@ -73,7 +90,7 @@ export default function AppLayout() {
         )}
       </main>
 
-      {/* Mobile bottom tab bar */}
+      {/* ── Mobile Bottom Tab Bar ─────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border flex items-center justify-around z-40 pb-safe" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         {tabs.map((tab) => {
           const Icon = tab.icon;
