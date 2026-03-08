@@ -394,6 +394,16 @@ export async function toggleEmailWatch(_connectionId: string, _enabled: boolean)
 }
 
 // ─────────────────────────────────────────────
+// API Functions: Timezones
+// ─────────────────────────────────────────────
+
+/** GET /api/timezones — Fetches all supported timezones, ordered by UTC offset. */
+export async function getTimezones(): Promise<Timezone[]> {
+  await delay();
+  return MOCK_TIMEZONES;
+}
+
+// ─────────────────────────────────────────────
 // API Functions: User Settings
 // ─────────────────────────────────────────────
 
