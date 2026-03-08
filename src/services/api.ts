@@ -292,6 +292,19 @@ const MOCK_SETTINGS: UserSettings = {
 };
 
 // ─────────────────────────────────────────────
+// Mock Data: Timezones (mirrors the `timezones` DB table)
+// ─────────────────────────────────────────────
+
+const MOCK_TIMEZONES: Timezone[] = [
+  { id: 1, name: "New York (EST, UTC-5)", iana_key: "America/New_York", location: "New York", utc_offset: "-05:00:00" },
+  { id: 2, name: "London (GMT, UTC+0)", iana_key: "Europe/London", location: "London", utc_offset: "00:00:00" },
+  { id: 3, name: "Berlin (CET, UTC+1)", iana_key: "Europe/Berlin", location: "Berlin", utc_offset: "01:00:00" },
+  { id: 4, name: "Singapore (SGT, UTC+8)", iana_key: "Asia/Singapore", location: "Singapore", utc_offset: "08:00:00" },
+  { id: 5, name: "Tokyo (JST, UTC+9)", iana_key: "Asia/Tokyo", location: "Tokyo", utc_offset: "09:00:00" },
+  { id: 6, name: "Los Angeles (PST, UTC-8)", iana_key: "America/Los_Angeles", location: "Los Angeles", utc_offset: "-08:00:00" },
+];
+
+// ─────────────────────────────────────────────
 // Network simulation helper
 // ─────────────────────────────────────────────
 
