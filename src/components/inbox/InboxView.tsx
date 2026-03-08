@@ -23,7 +23,7 @@ import { MapPin, Link2, Users, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export default function InboxView() {
-  const { data: pendingEvents, isLoading } = usePendingInbox();
+  const { data: pendingEvents, isLoading, isError, refetch } = usePendingInbox();
   const [activeTab, setActiveTab] = useState<"pending" | "added">("pending");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
