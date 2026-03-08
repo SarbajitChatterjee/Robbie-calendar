@@ -12,6 +12,8 @@
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { usePendingInbox } from "@/hooks/useEvents";
+import { acceptEmailEvent, dismissEmailEvent } from "@/services/api";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { CalendarEvent } from "@/types";
 import { EventDetailSheet } from "@/components/shared/EventDetailSheet";
 import { EventListSkeleton } from "@/components/shared/EventSkeleton";
