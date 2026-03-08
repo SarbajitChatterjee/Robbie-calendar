@@ -35,14 +35,26 @@ export default function InboxView() {
   const pending = pendingEvents?.filter((e) => !dismissed.has(e.id) && !accepted.has(e.id)) ?? [];
   const addedEvents = pendingEvents?.filter((e) => accepted.has(e.id)) ?? [];
 
-  const handleAccept = (id: string) => {
+  const handleAccept = async (id: string) => {
     setAccepted((s) => new Set(s).add(id));
     toast.success("Event added to your calendar");
+    try {
+      await acceptEmailEvent(id, "default");
+    } catch {
+      setAccepted((s) => { const next = new Set(s); next.delete(id); return next; });
+      toast.error("Failed to add event — please try again");
+    }
   };
 
-  const handleDismiss = (id: string) => {
+  const handleDismiss = async (id: string) => {
     setDismissed((s) => new Set(s).add(id));
     toast("Event dismissed");
+    try {
+      await dismissEmailEvent(id);
+    } catch {
+      setDismissed((s) => { const next = new Set(s); next.delete(id); return next; });
+      toast.error("Failed to dismiss event — please try again");
+    }
   };
 
   return (
