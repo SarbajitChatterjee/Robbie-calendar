@@ -72,7 +72,11 @@ export default function TodayView() {
       <div className="flex-1 px-5 pb-24 space-y-6">
         {isLoading && <EventListSkeleton />}
 
-        {!isLoading && !hasEvents && (
+        {!isLoading && isError && (
+          <ErrorState message="Couldn't load today's events" onRetry={refetch} />
+        )}
+
+        {!isLoading && !isError && !hasEvents && (
           <EmptyState
             emoji="☀️"
             title="Nothing scheduled today"

@@ -80,6 +80,10 @@ export default function MonthView() {
       </div>
 
       {/* Calendar grid — each cell is a day button with optional event dots */}
+      {isError && (
+        <div className="px-5"><ErrorState message="Couldn't load events" onRetry={refetch} /></div>
+      )}
+
       <div className="flex-1 px-5 space-y-1">
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7 gap-0">

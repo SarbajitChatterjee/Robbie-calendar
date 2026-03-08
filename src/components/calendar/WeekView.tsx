@@ -71,6 +71,8 @@ export default function WeekView() {
       {/* Hourly time grid with events */}
       {isLoading ? (
         <div className="p-5"><EventListSkeleton count={2} /></div>
+      ) : isError ? (
+        <div className="p-5"><ErrorState message="Couldn't load this week's events" onRetry={refetch} /></div>
       ) : (
         <div className="flex-1 overflow-auto relative">
           <div className="grid grid-cols-[3rem_repeat(7,1fr)] relative" style={{ height: HOURS.length * HOUR_HEIGHT }}>

@@ -48,6 +48,7 @@ export default function CalendarsView() {
       <section className="px-5 space-y-3 mb-8">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Your Connected Calendars</h2>
         {isLoading && <EventListSkeleton count={3} />}
+        {!isLoading && isError && <ErrorState message="Couldn't load your calendars" onRetry={refetch} />}
         {connections?.map((conn) => <ConnectionRow key={conn.id} connection={conn} />)}
       </section>
 
