@@ -17,6 +17,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
+/** Singleton query client — shared across all hooks via QueryClientProvider */
 const queryClient = new QueryClient();
 
 const App = () => (
