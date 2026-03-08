@@ -10,6 +10,7 @@ import { useState } from "react";
 import { format, parseISO, isToday } from "date-fns";
 import { Plus, Mail } from "lucide-react";
 import { useWeekEvents, usePendingInbox } from "@/hooks/useEvents";
+import { ErrorState } from "@/components/shared/ErrorState";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { CalendarEvent } from "@/types";
 import { EventCard } from "@/components/shared/EventCard";
