@@ -87,8 +87,7 @@ src/
 │   ├── Settings.tsx           # Settings view — timezone, display, email detection preferences.
 │   └── NotFound.tsx           # 404 catch-all.
 │
-├── styles/
-│   └── theme.css              # Extended design tokens (source colors, pastels, platform colors).
+├── styles/                    # (reserved for future extended stylesheets)
 │
 └── lib/
     └── utils.ts               # Tailwind `cn()` merge utility.
