@@ -1,80 +1,88 @@
 
 
-# Wire api.ts to Supabase — Remove All Mocks
+# Cleanup: Dead Code, Mock Leftovers, and Error Handling Polish
 
-## Blocker: No Supabase connection
+## Audit Findings
 
-There is no `src/integrations/supabase/client.ts` in the project. I need to connect Supabase first, which generates the typed client. Then I rewrite `api.ts`.
+### Dead code and unused modules
 
-## Step 1 — Connect Supabase
-I will prompt you to link your Supabase project (or create one via Lovable Cloud). This auto-generates the client file.
+| Issue | File | Detail |
+|---|---|---|
+| Unused Radix toast system | `use-toast.ts`, `toaster.tsx`, `ui/use-toast.ts`, `ui/toast.tsx` | App uses **Sonner** for all toasts. The Radix `Toaster` is mounted in `App.tsx` but nothing dispatches to it. 4 files + 1 import in `App.tsx` are dead weight. |
+| `ConfirmDialog` never used | `shared/ConfirmDialog.tsx` | Created but never imported by any component. Keep it (it's useful for future destructive actions like "Delete everything") but add a comment noting it's intentionally unused for now. |
+| `format` import in `api.ts` | `src/services/api.ts` line 18 | `format` is imported from `date-fns` but never called in any exported function. Dead import. |
+| Mock-specific error flag | `EventCard.tsx` line 35 | `const hasError = event.source === "outlook"` — hardcoded mock assumption that Outlook = error. Should derive error state from actual connection data, not source type. |
 
-## Step 2 — Rewrite `src/services/api.ts`
+### Missing error handling / broken UX
 
-**Delete entirely** (~305 lines):
-- All `MOCK_*` arrays, `makeDate()`, `today()`, `weekStart`, `mondayOffset`, `delay()`
-- `date-fns` import (no longer needed here)
+| Issue | File | Detail |
+|---|---|---|
+| "Review" button does nothing | `TodayView.tsx` line 66 | The pending invitation banner's "Review" button has no `onClick`. Should switch to the Inbox tab. |
+| Settings toggles/selects are fire-and-forget | `Settings.tsx` | All controls use `defaultValue`/`defaultChecked` with no `onChange`. Changes aren't persisted. Not wirable until backend exists, but should have placeholder handlers with toast feedback. |
+| Calendar toggle does nothing | `CalendarsView.tsx` line 129 | `Switch defaultChecked={connection.isEnabled}` — no `onChange`, toggling is silently ignored. |
+| MonthView has no loading skeleton | `MonthView.tsx` | Unlike TodayView/WeekView, MonthView shows no skeleton during initial load. The grid renders empty. |
+| `api.ts` still returns mock data | `src/services/api.ts` | Per the approved plan, this needs to become backend-ready placeholders with commented-out Supabase queries. |
 
-**Replace each function body** with a Supabase query. Same signatures, same return types — no other file changes.
+---
 
-A small `mapRow()` helper converts Postgres `snake_case` columns to the `camelCase` TypeScript interfaces. This is the only glue code.
+## Plan
 
-```text
-// BEFORE
-export async function getEventsForDateRange(...) {
-  await delay();
-  return MOCK_EVENTS;
-}
+### 1. Rewrite `api.ts` — mock data → backend-ready placeholders
+- Delete all `MOCK_*` constants, `delay()`, `makeDate()`, `today()`, `weekStart`, `mondayOffset`
+- Remove the `date-fns` import (dead after mock removal)
+- Add top-of-file SQL DDL + Edge Function documentation in comments
+- Add `mapEventRow`, `mapConnectionRow`, `mapSettingsRow` row-mapping utilities (live code)
+- Each function gets a commented-out Supabase query block + an active `throw new Error("Backend not connected")` placeholder
+- Add commented-out `import { supabase } from "@/integrations/supabase/client"` at the top
 
-// AFTER
-export async function getEventsForDateRange(start: Date, end: Date) {
-  const { data, error } = await supabase
-    .from("events")
-    .select("*")
-    .gte("start", start.toISOString())
-    .lte("start", end.toISOString())
-    .eq("acceptance_status", "accepted");
-  if (error) throw new Error(error.message);
-  return (data ?? []).map(mapEventRow);
-}
-```
+### 2. Remove dead Radix toast system
+- Delete `src/hooks/use-toast.ts`
+- Delete `src/components/ui/use-toast.ts`
+- Delete `src/components/ui/toaster.tsx`
+- Delete `src/components/ui/toast.tsx`
+- Remove `<Toaster />` import and usage from `App.tsx`
+- The app already uses Sonner (`<Sonner />`) exclusively
 
-### Full function → query mapping
+### 3. Fix `EventCard.tsx` — remove mock-specific error logic
+- Remove `const hasError = event.source === "outlook"` and the associated warning block
+- This was a mock-data artifact. Real connection errors should be surfaced at the view level (already done via `ErrorState`), not per-card based on source type
 
-| Function | Query |
-|---|---|
-| `getEventsForDateRange(start, end)` | `events` — filter by `start` range, `acceptance_status = accepted` |
-| `getPendingEmailEvents()` | `events` — filter `acceptance_status = pending_review` |
-| `acceptEmailEvent(id, calId)` | `events` — update `acceptance_status`, `calendar_id` |
-| `dismissEmailEvent(id)` | `events` — update `acceptance_status = dismissed` |
-| `getCalendarConnections()` | `calendar_connections` — select with `sub_calendars(*)` |
-| `disconnectCalendar(id)` | `calendar_connections` — delete |
-| `updateCalendarColor(id, color)` | `calendar_connections` — update `color` |
-| `toggleCalendarVisibility(id, enabled)` | `calendar_connections` — update `is_enabled` |
-| `toggleEmailWatch(id, enabled)` | `calendar_connections` — update `email_watch_enabled` |
-| `getTimezones()` | `timezones` — select all, order by `utc_offset` |
-| `getUserSettings()` | `user_settings` — select single row for current user |
-| `updateUserSettings(settings)` | `user_settings` — update, return merged |
-| `deleteAllUserData()` | `supabase.functions.invoke("delete-user-data")` |
-| `initiateOAuthConnection(source)` | `supabase.functions.invoke("oauth-connect", ...)` |
-| `connectAppleCalendar(...)` | `supabase.functions.invoke("connect-apple", ...)` |
-| `connectCalDAV(...)` | `supabase.functions.invoke("connect-caldav", ...)` |
-| `syncNow(id)` | `supabase.functions.invoke("sync-calendar", ...)` |
+### 4. Fix TodayView "Review" button
+- Accept an `onTabChange` callback from `AppLayout` and pass it down
+- Wire the "Review" button to switch to the `"inbox"` tab
+- This requires `AppLayout` to pass `setActiveTab` as a prop to `TodayView`
 
-### What the backend engineer does after this
-1. Create tables: `events`, `calendar_connections`, `sub_calendars`, `user_settings`, `timezones`
-2. Enable RLS on each table
-3. Seed `timezones` with timezone data
-4. Create Edge Functions: `delete-user-data`, `oauth-connect`, `connect-apple`, `connect-caldav`, `sync-calendar`
+### 5. Add placeholder `onChange` handlers to Settings controls
+- Wire each `Switch`/`Select` to call `updateUserSettings()` with a try/catch
+- Show a Sonner toast on success ("Settings updated") and on failure ("Couldn't save — try again")
+- This makes settings functional the moment the backend is connected
 
-### Files touched
+### 6. Add placeholder `onChange` to CalendarsView toggle
+- Wire `Switch onChange` to call `toggleCalendarVisibility()` with optimistic UI + error toast rollback
+
+### 7. Add loading state to MonthView
+- Show skeleton/spinner while `isLoading` is true, consistent with other views
+
+### 8. Add comment to `ConfirmDialog.tsx`
+- Note that it's intentionally unused — reserved for future destructive actions (disconnect calendar, delete all data)
+
+---
+
+## Files touched
 
 | File | Action |
 |---|---|
-| `src/services/api.ts` | Full rewrite — mocks → Supabase queries |
-
-No other files change. All hooks, components, and types stay identical.
-
-### First action
-I will prompt the Supabase connection dialog so you can link your project.
+| `src/services/api.ts` | Full rewrite — mocks → commented Supabase queries + throw placeholders |
+| `src/hooks/use-toast.ts` | **Delete** |
+| `src/components/ui/use-toast.ts` | **Delete** |
+| `src/components/ui/toaster.tsx` | **Delete** |
+| `src/components/ui/toast.tsx` | **Delete** |
+| `src/App.tsx` | Remove Radix `Toaster` import + JSX |
+| `src/components/shared/EventCard.tsx` | Remove mock-specific Outlook error flag |
+| `src/components/calendar/TodayView.tsx` | Wire "Review" button to tab switch |
+| `src/components/layout/AppLayout.tsx` | Pass `onTabChange` prop to TodayView |
+| `src/pages/Settings.tsx` | Add onChange handlers with toast feedback |
+| `src/components/calendars/CalendarsView.tsx` | Wire Switch onChange + loading state |
+| `src/components/calendar/MonthView.tsx` | Add loading skeleton |
+| `src/components/shared/ConfirmDialog.tsx` | Add "intentionally unused" comment |
 
