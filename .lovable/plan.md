@@ -1,81 +1,40 @@
 
 
-# Restructure to Frontend → REST API → Backend
+# Enable Supabase + Implement Authentication Layer
 
-## Current Problem
+## Blocker: Supabase Not Connected
 
-`api.ts` currently contains Supabase-specific queries (commented out). This means the frontend is designed to talk directly to the database. The user wants a clean separation: **frontend only knows about REST endpoints**, backend handles everything else.
+Supabase is not yet set up in this project. There is no `@supabase/supabase-js` dependency, no client file, and no Supabase connection.
 
-## What Changes
+**You need to do this first:**
 
-### Rewrite `src/services/api.ts`
+1. Open the **Cloud** tab in your Lovable project (top-right area of the editor)
+2. Enable **Lovable Cloud** (this provisions a Supabase instance and creates the client file at `src/integrations/supabase/client.ts`)
+3. Once enabled, reply here so I can proceed
 
-**Delete entirely:**
-- All Supabase-specific commented-out code (`.from("events").select(...)`, `.functions.invoke(...)`)
-- All row mappers (`mapEventRow`, `mapConnectionRow`, `mapSettingsRow`, `toSettingsColumns`) — these belong in the backend
-- The Supabase client import comment
-- The SQL DDL block — move to a separate backend doc
+## What I Will Build After Supabase Is Connected
 
-**Replace with:**
-- A single `API_BASE_URL` config constant (reads from `import.meta.env.VITE_API_BASE_URL`, defaults to `"/api"`)
-- A shared `apiFetch<T>(method, path, body?)` helper that:
-  - Prepends `API_BASE_URL`
-  - Sets `Content-Type: application/json`
-  - Attaches auth token from `localStorage` (or wherever the backend auth puts it)
-  - Throws a typed error on non-2xx responses with the server's error message
-- Each function becomes a clean HTTP call — no DB knowledge whatsoever
+Once the Supabase client exists, I will implement the full authentication layer exactly as specified:
 
-### Example (before → after)
-
-```text
-// BEFORE (Supabase-aware)
-export async function getEventsForDateRange(start, end) {
-  // const { data, error } = await supabase.from("events").select("*")...
-  throw new Error("Backend not connected");
-}
-
-// AFTER (pure REST)
-export async function getEventsForDateRange(start: Date, end: Date): Promise<CalendarEvent[]> {
-  return apiFetch("GET", `/events?start=${start.toISOString()}&end=${end.toISOString()}`);
-}
-```
-
-### Full endpoint mapping
-
-| Function | HTTP Call |
-|---|---|
-| `getEventsForDateRange(start, end)` | `GET /events?start=...&end=...` |
-| `getPendingEmailEvents()` | `GET /events/pending` |
-| `acceptEmailEvent(id, calId)` | `POST /events/{id}/accept` body: `{ targetCalendarId }` |
-| `dismissEmailEvent(id)` | `POST /events/{id}/dismiss` |
-| `getCalendarConnections()` | `GET /calendars` |
-| `initiateOAuthConnection(source)` | `POST /calendars/connect/oauth` body: `{ source }` |
-| `connectAppleCalendar(appleId, pw)` | `POST /calendars/connect/apple` body: `{ appleId, appPassword }` |
-| `connectCalDAV(url, user, pw)` | `POST /calendars/connect/caldav` body: `{ serverUrl, username, password }` |
-| `disconnectCalendar(id)` | `DELETE /calendars/{id}` |
-| `syncNow(id?)` | `POST /calendars/sync` body: `{ connectionId? }` |
-| `updateCalendarColor(id, color)` | `PATCH /calendars/{id}/color` body: `{ color }` |
-| `toggleCalendarVisibility(id, enabled)` | `PATCH /calendars/{id}/visibility` body: `{ enabled }` |
-| `toggleEmailWatch(id, enabled)` | `PATCH /calendars/{id}/email-watch` body: `{ enabled }` |
-| `getTimezones()` | `GET /timezones` |
-| `getUserSettings()` | `GET /user/settings` |
-| `updateUserSettings(settings)` | `PATCH /user/settings` body: partial settings |
-| `deleteAllUserData()` | `DELETE /user/data` |
-
-### Create `BACKEND_API.md`
-
-A standalone doc for the backend engineer containing:
-- The full REST API contract (every endpoint, method, request body, response shape)
-- The SQL DDL (moved from `api.ts` — it doesn't belong in frontend code)
-- Expected JSON response shapes matching the TypeScript interfaces
-- Auth expectations (Bearer token in Authorization header)
-
-### Files touched
+### Files to Create / Modify
 
 | File | Action |
 |---|---|
-| `src/services/api.ts` | Full rewrite — pure REST calls via `fetch()`, zero DB knowledge |
-| `BACKEND_API.md` | **Create** — REST contract + SQL DDL for the backend engineer |
+| `src/pages/Auth.tsx` | **Create** -- Login + Signup page with two tabs |
+| `src/pages/AuthConfirm.tsx` | **Create** -- Email confirmation handler |
+| `src/App.tsx` | **Modify** -- Add `/auth`, `/auth/confirm` routes + AuthGuard |
 
-No other files change. All hooks, components, and types remain identical because the function signatures stay the same.
+### Implementation (unchanged from approved plan)
+
+1. **AuthGuard** in App.tsx: listens to `onAuthStateChange`, redirects unauthenticated users to `/auth`, redirects authenticated users away from `/auth`
+
+2. **Auth.tsx** -- Login tab (email + password with show/hide + signInWithPassword) and Signup tab with all 7 fields in exact order: Display Name, Email, Password, Home Timezone (searchable from `public.timezones.tz_tag`), First Day of Week, Email Detection Mode (disabled, "ics_only"), Dark Mode (pill buttons)
+
+3. **AuthConfirm.tsx** -- Shows loading message, calls `getSession()`, validates session, reads `user_metadata`, upserts into `public.user_settings` with `onConflict: "user_id"`, redirects to homepage (or `/auth?error=confirmation_failed` on failure)
+
+4. **Data integrity**: signup stores fields in `user_metadata` only; `user_settings` is written to only after confirmed session; failed confirmation writes nothing
+
+## Next Step
+
+Enable Lovable Cloud from the Cloud tab, then tell me to proceed.
 
