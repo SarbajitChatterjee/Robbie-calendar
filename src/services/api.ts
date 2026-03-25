@@ -259,9 +259,14 @@ export async function toggleEmailWatch(
  * GET /timezones
  * Fetches all supported timezones, ordered by UTC offset.
  */
-export async function getTimezones(): Promise<Timezone[]> {
-  return apiFetch("GET", "/timezone");
-}
+  const { data, error } = await supabase
+    .from("timezone")
+    .select("tz_tag");
+
+  if (error) {
+    console.error("Failed to fetch timezones:", error.message);
+    return [];
+  }
 
 // ─────────────────────────────────────────────
 // User Settings
