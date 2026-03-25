@@ -14,48 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      // user_settings: {
+      //   Row: {
+      //     created_at: string
+      //     dark_mode: boolean
+      //     default_calendar_id: string
+      //     display_name: string
+      //     email: string
+      //     email_detection_mode: string
+      //     first_day_of_week: string
+      //     home_timezone: string
+      //     id: string
+      //     show_organizer_timezone: boolean
+      //     updated_at: string
+      //     user_id: string
+      //   }
+      //   Insert: {
+      //     created_at?: string
+      //     dark_mode?: boolean
+      //     default_calendar_id?: string
+      //     display_name?: string
+      //     email?: string
+      //     email_detection_mode?: string
+      //     first_day_of_week?: string
+      //     home_timezone?: string
+      //     id?: string
+      //     show_organizer_timezone?: boolean
+      //     updated_at?: string
+      //     user_id: string
+      //   }
+      //   Update: {
+      //     created_at?: string
+      //     dark_mode?: boolean
+      //     default_calendar_id?: string
+      //     display_name?: string
+      //     email?: string
+      //     email_detection_mode?: string
+      //     first_day_of_week?: string
+      //     home_timezone?: string
+      //     id?: string
+      //     show_organizer_timezone?: boolean
+      //     updated_at?: string
+      //     user_id?: string
+      //   }
+      //   Relationships: []
+      // }
       user_settings: {
         Row: {
-          created_at: string
-          dark_mode: boolean
-          default_calendar_id: string
-          display_name: string
-          email: string
-          email_detection_mode: string
-          first_day_of_week: string
-          home_timezone: string
-          id: string
-          show_organizer_timezone: boolean
-          updated_at: string
-          user_id: string
+          user_id:            string
+          email:              string | null
+          displayName:        string | null
+          homeTimezone:       string
+          firstDayOfWeek:     string
+          emailDetectionMode: string
+          darkMode:           boolean
+          showOrganizerTime:  boolean
+          defaultCalendarId:  number | null
+          created_at:         string
         }
         Insert: {
-          created_at?: string
-          dark_mode?: boolean
-          default_calendar_id?: string
-          display_name?: string
-          email?: string
-          email_detection_mode?: string
-          first_day_of_week?: string
-          home_timezone?: string
-          id?: string
-          show_organizer_timezone?: boolean
-          updated_at?: string
-          user_id: string
+          user_id:            string
+          email?:             string | null
+          displayName?:       string | null
+          homeTimezone?:      string
+          firstDayOfWeek?:    string
+          emailDetectionMode?: string
+          darkMode?:          boolean
+          showOrganizerTime?: boolean
+          defaultCalendarId?: number | null
+          created_at?:        string
         }
         Update: {
-          created_at?: string
-          dark_mode?: boolean
-          default_calendar_id?: string
-          display_name?: string
-          email?: string
-          email_detection_mode?: string
-          first_day_of_week?: string
-          home_timezone?: string
-          id?: string
-          show_organizer_timezone?: boolean
-          updated_at?: string
-          user_id?: string
+          user_id?:           string
+          email?:             string | null
+          displayName?:       string | null
+          homeTimezone?:      string
+          firstDayOfWeek?:    string
+          emailDetectionMode?: string
+          darkMode?:          boolean
+          showOrganizerTime?: boolean
+          defaultCalendarId?: number | null
+          created_at?:        string
         }
         Relationships: []
       }
