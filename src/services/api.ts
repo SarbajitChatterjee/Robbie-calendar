@@ -35,6 +35,8 @@ import {
   Timezone,
 } from "@/types";
 
+import { supabase } from "@/integrations/supabase/client";
+
 // ─────────────────────────────────────────────
 // Configuration
 // ─────────────────────────────────────────────
@@ -258,7 +260,7 @@ export async function toggleEmailWatch(
  * Fetches all supported timezones, ordered by UTC offset.
  */
 export async function getTimezones(): Promise<Timezone[]> {
-  return apiFetch("GET", "/timezones");
+  return apiFetch("GET", "/timezone");
 }
 
 // ─────────────────────────────────────────────
