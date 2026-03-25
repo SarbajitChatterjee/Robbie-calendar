@@ -129,13 +129,16 @@ export interface UserSettings {
  * Used to populate dropdowns and format timezone display strings dynamically.
  */
 export interface Timezone {
-  id: number;
+  //id: number;
   /** Human-readable label shown in dropdowns, e.g. "Singapore (SGT, UTC+8)". */
-  name: string;
+  //name: string;
+  tz_name:     string;
   /** IANA identifier stored as the user's preference, e.g. "Asia/Singapore". */
-  iana_key: string;
+  //iana_key: string;
+  tz_tag: string;
   /** City or region name, e.g. "Singapore". */
-  location: string;
+  //location: string;
+  tz_location: string;
   /** Postgres interval string representing UTC offset, e.g. "08:00:00" or "-05:00:00". */
   utc_offset: string;
 }
