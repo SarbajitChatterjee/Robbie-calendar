@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      user_settings: {
+        Row: {
+          created_at: string
+          dark_mode: boolean
+          default_calendar_id: string
+          display_name: string
+          email: string
+          email_detection_mode: string
+          first_day_of_week: string
+          home_timezone: string
+          id: string
+          show_organizer_timezone: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dark_mode?: boolean
+          default_calendar_id?: string
+          display_name?: string
+          email?: string
+          email_detection_mode?: string
+          first_day_of_week?: string
+          home_timezone?: string
+          id?: string
+          show_organizer_timezone?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dark_mode?: boolean
+          default_calendar_id?: string
+          display_name?: string
+          email?: string
+          email_detection_mode?: string
+          first_day_of_week?: string
+          home_timezone?: string
+          id?: string
+          show_organizer_timezone?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
