@@ -41,19 +41,35 @@ export default function AuthConfirm() {
         const email = session.user.email ?? "";
 
         // Upsert into user_settings — only runs after confirmed session
+        // const { error: upsertError } = await supabase
+        //   .from("user_settings")
+        //   .upsert(
+        //     {
+        //       user_id: userId,
+        //       display_name: meta.displayName ?? "",
+        //       email,
+        //       home_timezone: meta.homeTimezone ?? "UTC",
+        //       first_day_of_week: meta.firstDayOfWeek ?? "sunday",
+        //       email_detection_mode: meta.emailDetectionMode === "ics_only" ? "ics_only" : "disabled",
+        //       dark_mode: meta.darkMode ?? false,
+        //       show_organizer_timezone: true,
+        //       default_calendar_id: "",
+        //     },
+        //     { onConflict: "user_id" }
+        //   );
+
         const { error: upsertError } = await supabase
           .from("user_settings")
           .upsert(
             {
-              user_id: userId,
-              display_name: meta.displayName ?? "",
-              email,
-              home_timezone: meta.homeTimezone ?? "UTC",
-              first_day_of_week: meta.firstDayOfWeek ?? "sunday",
-              email_detection_mode: meta.emailDetectionMode === "ics_only" ? "ics_only" : "disabled",
-              dark_mode: meta.darkMode ?? false,
-              show_organizer_timezone: true,
-              default_calendar_id: "",
+              user_id:            userId,
+              email:              email,
+              displayName:        meta.displayName        ?? "",
+              homeTimezone:       meta.homeTimezone        ?? "UTC",
+              firstDayOfWeek:     meta.firstDayOfWeek      ?? "monday",
+              emailDetectionMode: "ics_only",
+              darkMode:           meta.darkMode            ?? false,
+              showOrganizerTime:  true,
             },
             { onConflict: "user_id" }
           );
