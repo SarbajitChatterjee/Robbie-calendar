@@ -262,7 +262,7 @@ export async function toggleEmailWatch(
 export async function getTimezones(): Promise<Timezone[]> {
   const { data, error } = await supabase
     .from("timezone")
-    .select("tz_tag");
+    .select("tz_tag, tz_name");
 
   if (error) {
     console.error("Failed to fetch timezones:", error.message);
