@@ -146,7 +146,8 @@ function SignupForm() {
   //   tz.iana_key.toLowerCase().includes(tzSearch.toLowerCase())
   // );
   const filteredTimezones = (timezones ?? []).filter((tz: Timezone) =>
-  (tz.tz_tag ?? "").toLowerCase().includes(tzSearch.toLowerCase())
+    (tz.tz_tag ?? "").toLowerCase().includes(tzSearch.toLowerCase()) ||
+    (tz.tz_name ?? "").toLowerCase().includes(tzSearch.toLowerCase())
   );
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -250,10 +251,10 @@ function SignupForm() {
                   className="h-8"
                 />
               </div>
-              {filteredTimezones.map((tz: Timezone) => (
-                <SelectItem key={tz.tag} value={tz.tag}>
-                  {tz.tag}
-                </SelectItem>
+            {filteredTimezones.map((tz: Timezone) => (
+              <SelectItem key={tz.tz_tag} value={tz.tz_tag}>
+                {tz.tz_name}
+              </SelectItem>
               ))}
               {filteredTimezones.length === 0 && (
                 <div className="p-2 text-sm text-muted-foreground text-center">
