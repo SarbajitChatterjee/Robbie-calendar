@@ -58,9 +58,14 @@ export function formatTimezoneDisplay(ianaKey: string, timezones: Timezone[]): {
   if (tz) {
     const offset = getOffsetLabel(tz);
     // Extract abbreviation from name — e.g. "Singapore (SGT, UTC+8)" → "SGT"
-    const abbrMatch = tz.tz_name.match(/\((\w+),/);
-    const abbr = abbrMatch ? abbrMatch[1] : tz.tz_location;
-    return { abbr, offset, full: `${abbr} (${offset})` };
+    // const abbrMatch = tz.tz_name.match(/\((\w+),/);
+    // const abbr = abbrMatch ? abbrMatch[1] : tz.tz_location;
+    // return { abbr, offset, full: `${abbr} (${offset})` };
+
+    //Regex not correctly working, lazy work will check later. 
+    //For now display as it is in Location
+    const abbr = tz.tz_location ?? tz.tz_name ?? tz.tz_tag;
+    return { abbr, offset, full: `${tz.tz_name} (${offset})` };
   }
   // Fallback for timezones not in the DB
   const label = fallbackLabel(ianaKey);
