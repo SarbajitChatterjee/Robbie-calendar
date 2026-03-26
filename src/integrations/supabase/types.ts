@@ -68,7 +68,7 @@ export type Database = {
           firstDayOfWeek:     string
           emailDetectionMode: string
           darkMode:           boolean
-          showOrganizerTime:  boolean
+          showOrganizerTimezone:  boolean
           defaultCalendarId:  number | null
           created_at:         string
         }
@@ -80,7 +80,7 @@ export type Database = {
           firstDayOfWeek?:    string
           emailDetectionMode?: string
           darkMode?:          boolean
-          showOrganizerTime?: boolean
+          showOrganizerTimezone?: boolean
           defaultCalendarId?: number | null
           created_at?:        string
         }
@@ -92,7 +92,7 @@ export type Database = {
           firstDayOfWeek?:    string
           emailDetectionMode?: string
           darkMode?:          boolean
-          showOrganizerTime?: boolean
+          showOrganizerTimezone?: boolean
           defaultCalendarId?: number | null
           created_at?:        string
         }
