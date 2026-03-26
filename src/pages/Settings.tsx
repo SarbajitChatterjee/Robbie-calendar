@@ -92,7 +92,8 @@ export default function SettingsView() {
         <SettingRow label="Home Timezone">
           <Select
             defaultValue={settings.homeTimezone}
-            onValueChange={(value) => saveSettingWithFeedback({ homeTimezone: value }, queryClient)}
+            /*onValueChange={(value) => saveSettingWithFeedback({ homeTimezone: value }, queryClient)}*/
+            onValueChange={(value) => saveSettingWithFeedback({ homeTimezone: value }, updateSettings)}
           >
             <SelectTrigger className="w-48 h-10 rounded-[var(--radius-button)]">
               <SelectValue />
@@ -110,13 +111,15 @@ export default function SettingsView() {
         <SettingRow label="Show organizer timezone on events">
           <Switch
             defaultChecked={settings.showOrganizerTimezone}
-            onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, queryClient)}
+            /*onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, queryClient)}*/
+            onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, updateSettings)}
         </SettingRow>
 
         <SettingRow label="First day of week">
           <Select
             defaultValue={settings.firstDayOfWeek}
-            onValueChange={(value) => saveSettingWithFeedback({ firstDayOfWeek: value as UserSettings["firstDayOfWeek"] }, queryClient)}
+            /*onValueChange={(value) => saveSettingWithFeedback({ firstDayOfWeek: value as UserSettings["firstDayOfWeek"] }, queryClient)}*/
+            onValueChange={(value) => saveSettingWithFeedback({ firstDayOfWeek: value as UserSettings["firstDayOfWeek"] }, updateSettings)}
           >
             <SelectTrigger className="w-32 h-10 rounded-[var(--radius-button)]">
               <SelectValue />
@@ -131,7 +134,8 @@ export default function SettingsView() {
         <SettingRow label="Email detection">
           <Select
             defaultValue={settings.emailDetectionMode}
-            onValueChange={(value) => saveSettingWithFeedback({ emailDetectionMode: value as UserSettings["emailDetectionMode"] }, queryClient)}
+            /*onValueChange={(value) => saveSettingWithFeedback({ emailDetectionMode: value as UserSettings["emailDetectionMode"] }, queryClient)}*/
+            onValueChange={(value) => saveSettingWithFeedback({ emailDetectionMode: value as UserSettings["emailDetectionMode"] }, updateSettings)}
           >
             <SelectTrigger className="w-48 h-10 rounded-[var(--radius-button)]">
               <SelectValue />
@@ -146,7 +150,8 @@ export default function SettingsView() {
         <SettingRow label="Dark mode">
           <Switch
             defaultChecked={settings.darkMode}
-            onCheckedChange={(checked) => saveSettingWithFeedback({ darkMode: checked }, queryClient)}
+            /*onCheckedChange={(checked) => saveSettingWithFeedback({ darkMode: checked }, queryClient)}*/
+            onCheckedChange={(checked) => saveSettingWithFeedback({ darkMode: checked }, updateSettings)}
           />
         </SettingRow>
 
