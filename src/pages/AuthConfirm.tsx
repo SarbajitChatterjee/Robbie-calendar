@@ -101,6 +101,9 @@ export default function AuthConfirm() {
         if (event === "SIGNED_IN" && session) {
           subscription.unsubscribe();
 
+
+          // Created a trigger to better handle the below handle_user_confirmed in DB.
+          /*
           try {
             const meta = session.user.user_metadata ?? {};
             const userId = session.user.id;
@@ -134,7 +137,9 @@ export default function AuthConfirm() {
             console.error("Unexpected error during confirmation:", err);
             navigate("/", { replace: true });
           }
-
+          */
+          navigate("/", { replace: true });
+          
         } else if (event === "SIGNED_OUT" || !session) {
           subscription.unsubscribe();
           navigate("/auth?error=confirmation_failed", { replace: true });
