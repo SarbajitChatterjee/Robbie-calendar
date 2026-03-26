@@ -115,7 +115,7 @@ export interface UserSettings {
   userId: string;
   homeTimezone: string;
   showOrganizerTimezone: boolean;
-  defaultCalendarId: string;
+  defaultCalendarId: number | null; 
   firstDayOfWeek: "sunday" | "monday";
   /** "ics_only" = only detect .ics attachments; "smart" = also parse email body for events. */
   emailDetectionMode: "ics_only" | "smart";
