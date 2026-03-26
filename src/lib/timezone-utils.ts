@@ -38,7 +38,7 @@ export function getOffsetLabel(tz: Timezone): string {
  * Returns undefined if not found in the provided list.
  */
 export function findTimezone(ianaKey: string, timezones: Timezone[]): Timezone | undefined {
-  return timezones.find((tz) => tz.iana_key === ianaKey);
+  return timezones.find((tz) => tz.tz_tag === ianaKey);
 }
 
 /**
@@ -58,8 +58,8 @@ export function formatTimezoneDisplay(ianaKey: string, timezones: Timezone[]): {
   if (tz) {
     const offset = getOffsetLabel(tz);
     // Extract abbreviation from name — e.g. "Singapore (SGT, UTC+8)" → "SGT"
-    const abbrMatch = tz.name.match(/\((\w+),/);
-    const abbr = abbrMatch ? abbrMatch[1] : tz.location;
+    const abbrMatch = tz.tz_name.match(/\((\w+),/);
+    const abbr = abbrMatch ? abbrMatch[1] : tz.tz_location;
     return { abbr, offset, full: `${abbr} (${offset})` };
   }
   // Fallback for timezones not in the DB
