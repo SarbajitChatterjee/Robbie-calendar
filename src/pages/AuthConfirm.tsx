@@ -62,14 +62,14 @@ export default function AuthConfirm() {
           .from("user_settings")
           .upsert(
             {
-              user_id:            userId,
-              email:              email,
-              displayName:        meta.displayName        ?? "",
-              homeTimezone:       meta.homeTimezone        ?? "UTC",
-              firstDayOfWeek:     meta.firstDayOfWeek      ?? "monday",
-              emailDetectionMode: "ics_only",
-              darkMode:           meta.darkMode            ?? false,
-              // showOrganizerTime:  true,
+              user_id:                 userId,
+              email:                   email,
+              displayName:             meta.displayName         ?? "",
+              homeTimezone:            meta.homeTimezone        ?? "UTC",
+              firstDayOfWeek:          meta.firstDayOfWeek      ?? "monday",
+              email_detection_mode:    meta.emailDetectionMode  === "ics_only" ? "ics_only" : "disabled",
+              darkMode:                meta.darkMode            ?? false,
+              showOrganizerTimezone:   true 
             },
             { onConflict: "user_id" }
           );
