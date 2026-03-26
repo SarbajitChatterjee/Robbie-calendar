@@ -98,6 +98,34 @@ export type Database = {
         }
         Relationships: []
       }
+
+      timezone: {
+        Row: {
+          id:          string
+          tz_tag:      string
+          tz_name:     string | null
+          tz_location: string | null
+          utc_offset:  string | null
+          created_at:  string
+        }
+        Insert: {
+          id?:          string
+          tz_tag:       string
+          tz_name?:     string | null
+          tz_location?: string | null
+          utc_offset?:  string | null
+          created_at?:  string
+        }
+        Update: {
+          id?:          string
+          tz_tag?:      string
+          tz_name?:     string | null
+          tz_location?: string | null
+          utc_offset?:  string | null
+          created_at?:  string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
