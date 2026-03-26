@@ -67,7 +67,8 @@ export default function AuthConfirm() {
               displayName:             meta.displayName         ?? "",
               homeTimezone:            meta.homeTimezone        ?? "UTC",
               firstDayOfWeek:          meta.firstDayOfWeek      ?? "monday",
-              emailDetectionMode:      meta.emailDetectionMode  === "ics_only" ? "ics_only" : "disabled",
+              // emailDetectionMode: meta.emailDetectionMode === "ics_only" ? "ics_only" : "disabled",
+              emailDetectionMode:      ["ics_only", "smart", "disabled"].includes(meta.emailDetectionMode) ? meta.emailDetectionMode: "ics_only",
               darkMode:                meta.darkMode            ?? false,
               showOrganizerTimezone:   true 
             },

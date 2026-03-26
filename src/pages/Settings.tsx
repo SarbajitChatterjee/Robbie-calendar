@@ -143,7 +143,8 @@ export default function SettingsView() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ics_only">Calendar invites only (.ics)</SelectItem>
-              <SelectItem value="smart">Also detect from emails</SelectItem>
+              <SelectItem value="smart">Smart detect from emails</SelectItem>
+              <SelectItem value="disabled">Disabled</SelectItem>
             </SelectContent>
           </Select>
         </SettingRow>

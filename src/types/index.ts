@@ -118,7 +118,7 @@ export interface UserSettings {
   defaultCalendarId: number | null; 
   firstDayOfWeek: "sunday" | "monday";
   /** "ics_only" = only detect .ics attachments; "smart" = also parse email body for events. */
-  emailDetectionMode: "ics_only" | "smart";
+  emailDetectionMode: "ics_only" | "smart" | "disabled";
   displayName: string;
   email: string;
   darkMode: boolean;

@@ -30,9 +30,10 @@ export function useUserSettings() {
         .from("user_settings")
         .select("*")
         .eq("user_id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error("NO_SETTINGS_ROW");
       return data;
     },
   });

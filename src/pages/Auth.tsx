@@ -136,7 +136,8 @@ function SignupForm() {
   const [showPw, setShowPw] = useState(false);
   const [homeTimezone, setHomeTimezone] = useState("");
   const [firstDayOfWeek, setFirstDayOfWeek] = useState<"sunday" | "monday">("sunday");
-  const [emailDetectionMode, setEmailDetectionMode] = useState<"disabled" | "ics_only">("disabled");
+  // const [emailDetectionMode, setEmailDetectionMode] = useState<"disabled" | "ics_only">("disabled");
+  const [emailDetectionMode, setEmailDetectionMode] = useState<"ics_only" | "smart" | "disabled">("ics_only");
   const [darkMode, setDarkMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tzSearch, setTzSearch] = useState("");
@@ -288,8 +289,9 @@ function SignupForm() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="disabled">Disabled</SelectItem>
-            <SelectItem value="ics_only">ICS attachments only</SelectItem>
+              <SelectItem value="ics_only">Calendar invites only (.ics)</SelectItem>
+              <SelectItem value="smart">Smart detect from emails</SelectItem>
+              <SelectItem value="disabled">Disabled</SelectItem>
           </SelectContent>
         </Select>
       </div>
