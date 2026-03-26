@@ -12,11 +12,26 @@ import type { Timezone } from "@/types";
  * Returns 0 for unparseable values.
  */
 export function parseUtcOffset(interval: string): number {
-  const match = interval.match(/^(-?)(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if (!match) return 0;
-  const sign = match[1] === "-" ? -1 : 1;
-  const hours = parseInt(match[2], 10);
-  const minutes = parseInt(match[3], 10);
+  // const match = interval.match(/^(-?)(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  // if (!match) return 0;
+  // const sign = match[1] === "-" ? -1 : 1;
+  // const hours = parseInt(match[2], 10);
+  // const minutes = parseInt(match[3], 10);
+  // return sign * (hours * 60 + minutes);
+  // Handle "UTC+05:30" or "UTC-05:00" format
+  const utcMatch = interval.match(/^UTC([+-])(\d{1,2}):(\d{2})$/);
+  if (utcMatch) {
+    const sign = utcMatch[1] === "+" ? 1 : -1;
+    const hours = parseInt(utcMatch[2], 10);
+    const mins = parseInt(utcMatch[3], 10);
+    return sign * (hours * 60 + mins);
+  }
+  // Handle "08:00:00" or "-05:00:00" format
+  const intervalMatch = interval.match(/^(-?)(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!intervalMatch) return 0;
+  const sign = intervalMatch[1] === "-" ? -1 : 1;
+  const hours = parseInt(intervalMatch[2], 10);
+  const minutes = parseInt(intervalMatch[3], 10);
   return sign * (hours * 60 + minutes);
 }
 
