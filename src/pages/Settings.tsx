@@ -113,6 +113,7 @@ export default function SettingsView() {
             defaultChecked={settings.showOrganizerTimezone}
             /*onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, queryClient)}*/
             onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, updateSettings)}
+          />
         </SettingRow>
 
         <SettingRow label="First day of week">
