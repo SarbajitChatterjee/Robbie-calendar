@@ -69,7 +69,7 @@ export default function AuthConfirm() {
               firstDayOfWeek:     meta.firstDayOfWeek      ?? "monday",
               emailDetectionMode: "ics_only",
               darkMode:           meta.darkMode            ?? false,
-              showOrganizerTime:  true,
+              // showOrganizerTime:  true,
             },
             { onConflict: "user_id" }
           );
