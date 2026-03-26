@@ -13,9 +13,12 @@
  * via useTimezones(). No hardcoded timezone entries.
  */
 
-import { useUserSettings } from "@/hooks/useUserSettings";
+// Below 3 are for using it through API. Right now tasking the settings page to directly reach out to Supabase for better security and less complications.
+// import { useUserSettings } from "@/hooks/useUserSettings";
+// import { updateUserSettings } from "@/services/api";
+// import { useQueryClient } from "@tanstack/react-query";
+import { useUserSettings, useUpdateUserSettings } from "@/hooks/useUserSettings";
 import { useTimezones } from "@/hooks/useTimezones";
-import { updateUserSettings } from "@/services/api";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,20 +26,31 @@ import { LogOut } from "lucide-react";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { toast } from "sonner";
 import { UserSettings } from "@/types";
-import { useQueryClient } from "@tanstack/react-query";
 
 /**
  * Attempts to persist a partial settings update.
  * Shows a toast on success or failure for immediate user feedback.
  */
+// Consistent with the changes of moving away from API for this page
+// async function saveSettingWithFeedback(
+//   patch: Partial<UserSettings>,
+//   queryClient: ReturnType<typeof useQueryClient>,
+// ) {
+//   try {
+//     await updateUserSettings(patch);
+//     // Invalidate cache so the UI reflects the server state
+//     queryClient.invalidateQueries({ queryKey: ["user-settings"] });
+//     toast.success("Settings updated");
+//   } catch {
+//     toast.error("Couldn't save — try again later");
+//   }
+// }
 async function saveSettingWithFeedback(
-  patch: Partial<UserSettings>,
-  queryClient: ReturnType<typeof useQueryClient>,
+  patch: Record<string, unknown>,
+  updateSettings: (patch: Record<string, unknown>) => Promise<void>,
 ) {
   try {
-    await updateUserSettings(patch);
-    // Invalidate cache so the UI reflects the server state
-    queryClient.invalidateQueries({ queryKey: ["user-settings"] });
+    await updateSettings(patch);
     toast.success("Settings updated");
   } catch {
     toast.error("Couldn't save — try again later");
@@ -46,13 +60,19 @@ async function saveSettingWithFeedback(
 export default function SettingsView() {
   const { data: settings, isLoading, isError, refetch } = useUserSettings();
   const { data: timezones = [] } = useTimezones();
-  const queryClient = useQueryClient();
+
+  //consistent with the changes of moving away from API
+  // const queryClient = useQueryClient();
+  const updateSettings = useUpdateUserSettings();
 
   if (isLoading) return null;
   if (isError || !settings) return <div className="p-5"><ErrorState message="Couldn't load your settings" onRetry={refetch} /></div>;
 
   // Generate initials from display name for the avatar placeholder
-  const initials = settings.displayName.slice(0, 2).toUpperCase();
+  // const initials = settings.displayName.slice(0, 2).toUpperCase();
+
+  // Better way of handling blanks:
+  const initials = (settings.displayName ?? "").slice(0, 2).toUpperCase() || "?";
 
   return (
     <div className="flex flex-col min-h-full pb-24">
@@ -79,8 +99,8 @@ export default function SettingsView() {
             </SelectTrigger>
             <SelectContent>
               {timezones.map((tz) => (
-                <SelectItem key={tz.iana_key} value={tz.iana_key}>
-                  {tz.name}
+                <SelectItem key={tz.tz_tag} value={tz.tz_tag}>
+                  {tz.tz_name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -89,8 +109,11 @@ export default function SettingsView() {
 
         <SettingRow label="Show organizer timezone on events">
           <Switch
-            defaultChecked={settings.showOrganizerTimezone}
+            /*defaultChecked={settings.showOrganizerTimezone}
             onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, queryClient)}
+            */
+            defaultChecked={settings.showOrganizerTime}
+            onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTime: checked }, queryClient)}
           />
         </SettingRow>
 
