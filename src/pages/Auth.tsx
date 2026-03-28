@@ -113,7 +113,7 @@ export default function Auth() {
   //   </>
   // );
 
-  //wave style 3
+  //wave style 2
   return (
     <>
       <style>{`
