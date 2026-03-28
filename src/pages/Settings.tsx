@@ -26,6 +26,8 @@ import { LogOut } from "lucide-react";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { toast } from "sonner";
 import { UserSettings } from "@/types";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Attempts to persist a partial settings update.
@@ -73,6 +75,8 @@ export default function SettingsView() {
 
   // Better way of handling blanks:
   const initials = (settings.displayName ?? "").slice(0, 2).toUpperCase() || "?";
+
+  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col min-h-full pb-24">
@@ -157,9 +161,15 @@ export default function SettingsView() {
           />
         </SettingRow>
 
-        {/* Sign out — no logic wired yet; will trigger auth.signOut() */}
-        <div className="pt-4 border-t border-border">
-          <Button variant="outline" className="w-full h-14 rounded-[var(--radius-button)] text-destructive border-destructive/30 gap-2">
+        {/* Sign out */}
+        <div className="pt-4 border-t border-border flex justify-center">
+          <Button
+            variant="outline" className="px-8 h-11 rounded-[var(--radius-button)] text-destructive border-destructive/30 gap-2 hover:bg-destructive hover:text-white transition-colors"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              navigate("/auth");
+            }}
+          >
             <LogOut className="w-4 h-4" />
             Sign out
           </Button>
