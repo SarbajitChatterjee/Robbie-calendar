@@ -15,6 +15,7 @@
 import { Globe } from "lucide-react";
 import { useTimezones } from "@/hooks/useTimezones";
 import { formatTimezoneDisplay } from "@/lib/timezone-utils";
+import { useEffect, useState } from "react";
 
 interface TimezoneDisplayProps {
   userTimezone: string;
@@ -52,14 +53,46 @@ export function TimezoneDisplay({ userTimezone, organizerTimezone, showOrganizer
   );
 }
 
-/** TimezonePill — Compact rounded pill showing the user's timezone. Used in view headers. */
+// TimezonePill — Compact rounded pill showing the user's selected static timezone. Used in view headers.
+// export function TimezonePill({ timezone }: { timezone: string }) {
+//   const { data: timezones = [] } = useTimezones();
+//   const { full } = formatTimezoneDisplay(timezone, timezones);
+//   return (
+//     <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+//       <Globe className="w-3 h-3" />
+//       Your time: {full}
+//     </span>
+//   );
+// }
+
+// Gets the actual timezone with the UTC interval and keeps it dynamic. 
+// Any change manually would result it to change to accurately display the user's selected time+zon.
 export function TimezonePill({ timezone }: { timezone: string }) {
   const { data: timezones = [] } = useTimezones();
   const { full } = formatTimezoneDisplay(timezone, timezones);
+  const [time, setTime] = useState("");
+
+  useEffect(() => {
+    const tick = () => {
+      setTime(
+        new Intl.DateTimeFormat("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+          timeZone: timezone.replace(/^\(UTC[^)]+\)\s*/, ""), // strips "(UTC+05:30) " prefix
+        }).format(new Date())
+      );
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [timezone]);
+
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground tabular-nums">
       <Globe className="w-3 h-3" />
-      Your time: {full}
+      {full} · {time}
     </span>
   );
 }
