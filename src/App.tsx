@@ -38,6 +38,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       (_event, session) => {
         setSession(session);
         setLoading(false);
+        // Sync Supabase JWT → localStorage so apiFetch can attach it as Bearer token
+        if (session?.access_token) {
+          localStorage.setItem("auth_token", session.access_token);
+        } else {
+          localStorage.removeItem("auth_token");
+        }
       }
     );
 
