@@ -1,40 +1,25 @@
 
 
-# Enable Supabase + Implement Authentication Layer
+## Subtle Animated Wave Background
 
-## Blocker: Supabase Not Connected
+Add a CSS-only animated wave background using pseudo-elements on the auth page container. The waves will be very faint, slow-moving, and use the existing design token colors at low opacity.
 
-Supabase is not yet set up in this project. There is no `@supabase/supabase-js` dependency, no client file, and no Supabase connection.
+### Approach
 
-**You need to do this first:**
+**CSS (`src/index.css`)**: Add a `.wave-bg` utility class with `::before` and `::after` pseudo-elements that render large, soft SVG wave shapes. Two layers at different speeds/sizes create depth. Colors will use `hsl(var(--border))` at ~0.08–0.12 opacity. Animation: gentle horizontal drift over 20–30s, infinite, ease-in-out.
 
-1. Open the **Cloud** tab in your Lovable project (top-right area of the editor)
-2. Enable **Lovable Cloud** (this provisions a Supabase instance and creates the client file at `src/integrations/supabase/client.ts`)
-3. Once enabled, reply here so I can proceed
+**Auth page (`src/pages/Auth.tsx`)**: Add `wave-bg` class to the outer `div` wrapper (the `min-h-screen` container). No other changes.
 
-## What I Will Build After Supabase Is Connected
+### CSS Detail
 
-Once the Supabase client exists, I will implement the full authentication layer exactly as specified:
+- Two wave layers using `background-image` with inline SVG data URIs (curved paths)
+- Layer 1: slower (25s), larger wave, opacity ~0.08
+- Layer 2: faster (18s), smaller wave, slightly offset, opacity ~0.06
+- Animation: `translateX` keyframes shifting waves horizontally by ~50% of their width
+- `pointer-events: none` and `z-index: 0` on pseudo-elements; card content stays above with `relative z-10`
+- Works in both light and dark mode since it uses CSS variable-based colors
 
-### Files to Create / Modify
-
-| File | Action |
-|---|---|
-| `src/pages/Auth.tsx` | **Create** -- Login + Signup page with two tabs |
-| `src/pages/AuthConfirm.tsx` | **Create** -- Email confirmation handler |
-| `src/App.tsx` | **Modify** -- Add `/auth`, `/auth/confirm` routes + AuthGuard |
-
-### Implementation (unchanged from approved plan)
-
-1. **AuthGuard** in App.tsx: listens to `onAuthStateChange`, redirects unauthenticated users to `/auth`, redirects authenticated users away from `/auth`
-
-2. **Auth.tsx** -- Login tab (email + password with show/hide + signInWithPassword) and Signup tab with all 7 fields in exact order: Display Name, Email, Password, Home Timezone (searchable from `public.timezones.tz_tag`), First Day of Week, Email Detection Mode (disabled, "ics_only"), Dark Mode (pill buttons)
-
-3. **AuthConfirm.tsx** -- Shows loading message, calls `getSession()`, validates session, reads `user_metadata`, upserts into `public.user_settings` with `onConflict: "user_id"`, redirects to homepage (or `/auth?error=confirmation_failed` on failure)
-
-4. **Data integrity**: signup stores fields in `user_metadata` only; `user_settings` is written to only after confirmed session; failed confirmation writes nothing
-
-## Next Step
-
-Enable Lovable Cloud from the Cloud tab, then tell me to proceed.
+### Files Changed
+1. **`src/index.css`** — Add `@keyframes wave-drift` and `.wave-bg` class with pseudo-element wave layers
+2. **`src/pages/Auth.tsx`** — Add `wave-bg` and `relative overflow-hidden` to the outer div; add `relative z-10` to the Card
 
