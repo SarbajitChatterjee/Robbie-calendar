@@ -67,27 +67,63 @@ export default function Auth() {
   //   </div>
   // );
 
+  // Wave style 1
+  // return (
+  //   <>
+  //     <style>{`
+  //       .auth-bg {
+  //         background: #f8f7ff;
+  //       }
+  //       .auth-bg::before {
+  //         content: '';
+  //         position: absolute;
+  //         inset: 0;
+  //         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cstyle%3E.line%7Bfill:none%3Bstroke-width:1.2%3Bopacity:0.35%7D%3C/style%3E%3C/defs%3E%3Cpath class='line' stroke='%23b8c4e8' d='M-50 200 Q200 100 400 300 T900 200'/%3E%3Cpath class='line' stroke='%23d4b8e8' d='M-50 350 Q150 250 350 450 T850 350'/%3E%3Cpath class='line' stroke='%23e8b8c8' d='M-50 500 Q250 380 500 520 T1100 480'/%3E%3Cpath class='line' stroke='%23b8d4e8' d='M100 -50 Q200 200 150 400 T200 900'/%3E%3Cpath class='line' stroke='%23c8b8e8' d='M300 -50 Q350 150 280 350 T320 900'/%3E%3Cpath class='line' stroke='%23e8c8b8' d='M600 -50 Q700 200 650 450 T680 900'/%3E%3Cpath class='line' stroke='%23b8e8d4' d='M-50 650 Q300 550 550 700 T1100 620'/%3E%3Cpath class='line' stroke='%23d4e8b8' d='M900 -50 Q850 300 920 500 T880 950'/%3E%3C/svg%3E");
+  //         animation: fadeInLines 1s ease-out forwards;
+  //         opacity: 0;
+  //         pointer-events: none;
+  //       }
+  //       @keyframes fadeInLines {
+  //         from { opacity: 0; transform: scale(1.03); }
+  //         to   { opacity: 1; transform: scale(1); }
+  //       }
+  //     `}</style>
+  //     <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden auth-bg">
+  //       <Card className="w-full max-w-md shadow-2xl relative z-10">
+  //         <CardHeader className="text-center">
+  //           <CardTitle className="text-2xl font-bold">Robbie</CardTitle>
+  //           <CardDescription>Your unified calendar</CardDescription>
+  //         </CardHeader>
+  //         <CardContent>
+  //           <Tabs defaultValue="login">
+  //             <TabsList className="grid w-full grid-cols-2">
+  //               <TabsTrigger value="login">Log in</TabsTrigger>
+  //               <TabsTrigger value="signup">Sign up</TabsTrigger>
+  //             </TabsList>
+  //             <TabsContent value="login">
+  //               <LoginForm />
+  //             </TabsContent>
+  //             <TabsContent value="signup">
+  //               <SignupForm />
+  //             </TabsContent>
+  //           </Tabs>
+  //         </CardContent>
+  //       </Card>
+  //     </div>
+  //   </>
+  // );
+
+  //wave style 3
   return (
     <>
       <style>{`
-        .auth-bg {
-          background: #f8f7ff;
-        }
-        .auth-bg::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cstyle%3E.line%7Bfill:none%3Bstroke-width:1.2%3Bopacity:0.35%7D%3C/style%3E%3C/defs%3E%3Cpath class='line' stroke='%23b8c4e8' d='M-50 200 Q200 100 400 300 T900 200'/%3E%3Cpath class='line' stroke='%23d4b8e8' d='M-50 350 Q150 250 350 450 T850 350'/%3E%3Cpath class='line' stroke='%23e8b8c8' d='M-50 500 Q250 380 500 520 T1100 480'/%3E%3Cpath class='line' stroke='%23b8d4e8' d='M100 -50 Q200 200 150 400 T200 900'/%3E%3Cpath class='line' stroke='%23c8b8e8' d='M300 -50 Q350 150 280 350 T320 900'/%3E%3Cpath class='line' stroke='%23e8c8b8' d='M600 -50 Q700 200 650 450 T680 900'/%3E%3Cpath class='line' stroke='%23b8e8d4' d='M-50 650 Q300 550 550 700 T1100 620'/%3E%3Cpath class='line' stroke='%23d4e8b8' d='M900 -50 Q850 300 920 500 T880 950'/%3E%3C/svg%3E");
-          animation: fadeInLines 1s ease-out forwards;
-          opacity: 0;
-          pointer-events: none;
-        }
-        @keyframes fadeInLines {
-          from { opacity: 0; transform: scale(1.03); }
-          to   { opacity: 1; transform: scale(1); }
+        @keyframes smoothReveal {
+          0%   { opacity: 0; transform: translateY(20px) scale(1.02); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
-      <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden auth-bg">
+      <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden" style={{ backgroundColor: "#F8F9FA" }}>
+        <BackgroundWaves />
         <Card className="w-full max-w-md shadow-2xl relative z-10">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">Robbie</CardTitle>
@@ -380,5 +416,54 @@ function SignupForm() {
         Create account
       </Button>
     </form>
+  );
+}
+
+// Wave fucntion to support wave style 2.
+function BackgroundWaves() {
+  return (
+    <div style={{
+      position: "absolute",
+      top: 0, left: 0,
+      width: "100vw", height: "100vh",
+      overflow: "hidden",
+      zIndex: 0,
+      backgroundColor: "#F8F9FA",
+    }}>
+      <svg
+        style={{ width: "100%", height: "100%", animation: "smoothReveal 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards", opacity: 0 }}
+        viewBox="0 0 1440 800"
+        preserveAspectRatio="xMidYMid slice"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient id="gradBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#4A90E2" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#9013FE" stopOpacity="0.2" />
+          </linearGradient>
+          <linearGradient id="gradPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#9013FE" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#FF4B2B" stopOpacity="0.15" />
+          </linearGradient>
+          <linearGradient id="gradPink" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#BD10E0" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#F5A623" stopOpacity="0.2" />
+          </linearGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="#F8F9FA" />
+        <path
+          d="M-100,150 C250,50 450,450 950,150 C1250,-50 1550,250 1650,150 L1650,1000 L-100,1000 Z"
+          fill="#FAFBFC" stroke="url(#gradBlue)" strokeWidth="1.5"
+        />
+        <path
+          d="M-100,350 C350,250 550,650 1050,350 C1350,150 1550,550 1650,350 L1650,1000 L-100,1000 Z"
+          fill="#FCFDFE" stroke="url(#gradPurple)" strokeWidth="1.5"
+        />
+        <path
+          d="M-100,550 C450,450 650,850 1150,550 C1450,350 1550,750 1650,600 L1650,1000 L-100,1000 Z"
+          fill="#FFFFFF" stroke="url(#gradPink)" strokeWidth="1.5"
+        />
+      </svg>
+    </div>
   );
 }
