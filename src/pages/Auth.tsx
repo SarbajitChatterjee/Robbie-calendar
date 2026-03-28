@@ -37,29 +37,79 @@ export default function Auth() {
     });
   }, [navigate]);
 
+  //Part of wavy background style
+  // return (
+  //   // <div className="min-h-screen flex items-center justify-center bg-background px-4">
+  //   //Part of wavy background style
+  //   <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden auth-bg">
+  //     {/* <Card className="w-full max-w-md"> */}
+  //     {/* Part of wavy background style */}
+  //     <Card className="w-full max-w-md shadow-2xl relative z-10">
+  //       <CardHeader className="text-center">
+  //         <CardTitle className="text-2xl font-bold">Robbie</CardTitle>
+  //         <CardDescription>Your unified calendar</CardDescription>
+  //       </CardHeader>
+  //       <CardContent>
+  //         <Tabs defaultValue="login">
+  //           <TabsList className="grid w-full grid-cols-2">
+  //             <TabsTrigger value="login">Log in</TabsTrigger>
+  //             <TabsTrigger value="signup">Sign up</TabsTrigger>
+  //           </TabsList>
+  //           <TabsContent value="login">
+  //             <LoginForm />
+  //           </TabsContent>
+  //           <TabsContent value="signup">
+  //             <SignupForm />
+  //           </TabsContent>
+  //         </Tabs>
+  //       </CardContent>
+  //     </Card>
+  //   </div>
+  // );
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">Robbie</CardTitle>
-          <CardDescription>Your unified calendar</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="login">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Log in</TabsTrigger>
-              <TabsTrigger value="signup">Sign up</TabsTrigger>
-            </TabsList>
-            <TabsContent value="login">
-              <LoginForm />
-            </TabsContent>
-            <TabsContent value="signup">
-              <SignupForm />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+    <>
+      <style>{`
+        .auth-bg {
+          background: #f8f7ff;
+        }
+        .auth-bg::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cstyle%3E.line%7Bfill:none%3Bstroke-width:1.2%3Bopacity:0.35%7D%3C/style%3E%3C/defs%3E%3Cpath class='line' stroke='%23b8c4e8' d='M-50 200 Q200 100 400 300 T900 200'/%3E%3Cpath class='line' stroke='%23d4b8e8' d='M-50 350 Q150 250 350 450 T850 350'/%3E%3Cpath class='line' stroke='%23e8b8c8' d='M-50 500 Q250 380 500 520 T1100 480'/%3E%3Cpath class='line' stroke='%23b8d4e8' d='M100 -50 Q200 200 150 400 T200 900'/%3E%3Cpath class='line' stroke='%23c8b8e8' d='M300 -50 Q350 150 280 350 T320 900'/%3E%3Cpath class='line' stroke='%23e8c8b8' d='M600 -50 Q700 200 650 450 T680 900'/%3E%3Cpath class='line' stroke='%23b8e8d4' d='M-50 650 Q300 550 550 700 T1100 620'/%3E%3Cpath class='line' stroke='%23d4e8b8' d='M900 -50 Q850 300 920 500 T880 950'/%3E%3C/svg%3E");
+          animation: fadeInLines 1s ease-out forwards;
+          opacity: 0;
+          pointer-events: none;
+        }
+        @keyframes fadeInLines {
+          from { opacity: 0; transform: scale(1.03); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+      <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden auth-bg">
+        <Card className="w-full max-w-md shadow-2xl relative z-10">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Robbie</CardTitle>
+            <CardDescription>Your unified calendar</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="login">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Log in</TabsTrigger>
+                <TabsTrigger value="signup">Sign up</TabsTrigger>
+              </TabsList>
+              <TabsContent value="login">
+                <LoginForm />
+              </TabsContent>
+              <TabsContent value="signup">
+                <SignupForm />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }
 
@@ -284,7 +334,7 @@ function SignupForm() {
       {/* 6. Email Detection Mode */}
       <div className="space-y-2">
         <Label>Email Detection Mode</Label>
-        <Select value={emailDetectionMode} onValueChange={(v) => setEmailDetectionMode(v as "disabled" | "ics_only")}>
+        <Select value={emailDetectionMode} onValueChange={(v) => setEmailDetectionMode(v as "ics_only" | "smart" | "disabled")}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
