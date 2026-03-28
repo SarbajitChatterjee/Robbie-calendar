@@ -38,8 +38,8 @@ export default function Auth() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4 wave-bg">
+      <Card className="w-full max-w-md relative z-10">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Robbie</CardTitle>
           <CardDescription>Your unified calendar</CardDescription>
