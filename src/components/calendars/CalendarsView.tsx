@@ -23,6 +23,7 @@ import { ChevronRight, AlertTriangle, Plus, Server } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
+import { initiateOAuthConnection } from "@/services/api";
 
 /** Icon config for each calendar source type. */
 const sourceIcons: Record<string, { bg: string; label: string }> = {
@@ -62,9 +63,15 @@ export default function CalendarsView() {
       <section className="px-5 space-y-3 mb-8">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Add a Source</h2>
         <div className="grid grid-cols-2 gap-3">
-          <SourceCard icon="G" name="Google Calendar" subtitle="Sign in with Google" badge="Calendar + Email Watch" iconBg="bg-[hsl(217,91%,93%)]" />
+          {/* <SourceCard icon="G" name="Google Calendar" subtitle="Sign in with Google" badge="Calendar + Email Watch" iconBg="bg-[hsl(217,91%,93%)]" /> */}
+          <SourceCard icon="G" name="Google Calendar" subtitle="Sign in with Google" badge="Calendar + Email Watch" iconBg="bg-[hsl(217,91%,93%)]"
+            onClick={async () => {
+                const { redirect_auth_url } = await initiateOAuthConnection("google");
+                window.location.href = redirect_auth_url;
+            }}
+            />
           <SourceCard icon="O" name="Microsoft Outlook" subtitle="Sign in with Microsoft" badge="Calendar + Email Watch" iconBg="bg-[hsl(174,58%,90%)]" />
-          <SourceCard icon="🍎" name="Apple iCloud" subtitle="App-Specific Password" badge="Calendar only" iconBg="bg-[hsl(0,75%,93%)]" />
+          <SourceCard icon="A" name="Apple iCloud" subtitle="App-Specific Password" badge="Calendar only" iconBg="bg-[hsl(0,75%,93%)]" />
           <SourceCard icon="M" name="Gmail" subtitle="Watch for invitations" badge="Email detection only" iconBg="bg-[hsl(4,90%,93%)]" />
           <SourceCard icon={<Server className="w-5 h-5 text-muted-foreground" />} name="CalDAV / Other" subtitle="Connect any server" iconBg="bg-muted" />
           <div className="rounded-[var(--radius-card)] border border-dashed border-border p-4 flex flex-col items-center justify-center text-center opacity-50">
@@ -150,15 +157,16 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
 }
 
 /** SourceCard — A clickable card for adding a new calendar source. */
-function SourceCard({ icon, name, subtitle, badge, iconBg }: {
+function SourceCard({ icon, name, subtitle, badge, iconBg, onClick }: {
   icon: string | React.ReactNode;
   name: string;
   subtitle: string;
   badge?: string;
   iconBg: string;
+  onClick?: () => void;
 }) {
   return (
-    <button className="rounded-[var(--radius-card)] bg-card p-4 shadow-[0_2px_8px_hsl(var(--shadow-soft))] flex flex-col items-center text-center space-y-2 hover:shadow-[0_4px_16px_hsl(var(--shadow-medium))] transition-shadow min-h-[var(--min-tap)]">
+    <button onClick={onClick} className="rounded-[var(--radius-card)] bg-card p-4 shadow-[0_2px_8px_hsl(var(--shadow-soft))] flex flex-col items-center text-center space-y-2 hover:shadow-[0_4px_16px_hsl(var(--shadow-medium))] transition-shadow min-h-[var(--min-tap)]">
       <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center text-sm font-bold`}>
         {icon}
       </div>

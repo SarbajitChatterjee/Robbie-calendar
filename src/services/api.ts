@@ -167,7 +167,7 @@ export async function getCalendarConnections(): Promise<CalendarConnection[]> {
  */
 export async function initiateOAuthConnection(
   source: "google" | "outlook"
-): Promise<{ redirectUrl: string }> {
+): Promise<{ redirect_auth_url: string }> {
   return apiFetch("POST", "/calendars/connect/oauth", { source });
 }
 
