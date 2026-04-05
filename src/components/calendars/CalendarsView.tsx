@@ -66,10 +66,13 @@ export default function CalendarsView() {
           {/* <SourceCard icon="G" name="Google Calendar" subtitle="Sign in with Google" badge="Calendar + Email Watch" iconBg="bg-[hsl(217,91%,93%)]" /> */}
           <SourceCard icon="G" name="Google Calendar" subtitle="Sign in with Google" badge="Calendar + Email Watch" iconBg="bg-[hsl(217,91%,93%)]"
             onClick={async () => {
-                const { redirect_auth_url } = await initiateOAuthConnection("google");
-                window.location.href = redirect_auth_url;
-            }}
-            />
+              try {
+                  const { redirect_auth_url } = await initiateOAuthConnection("google");
+                  window.location.href = redirect_auth_url;
+              } catch (error) {
+                  toast.error("Failed to connect Google Calendar. Please check or try again later");
+              }
+          }}/>
           <SourceCard icon="O" name="Microsoft Outlook" subtitle="Sign in with Microsoft" badge="Calendar + Email Watch" iconBg="bg-[hsl(174,58%,90%)]" />
           <SourceCard icon="A" name="Apple iCloud" subtitle="App-Specific Password" badge="Calendar only" iconBg="bg-[hsl(0,75%,93%)]" />
           <SourceCard icon="M" name="Gmail" subtitle="Watch for invitations" badge="Email detection only" iconBg="bg-[hsl(4,90%,93%)]" />
