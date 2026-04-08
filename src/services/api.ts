@@ -103,6 +103,24 @@ async function apiFetch<T>(
   return response.json();
 }
 
+function mapConnection(raw: Record<string, unknown>): CalendarConnection {
+  return {
+    id: raw.id as string,
+    userId: raw.user_id as string,
+    source: raw.source as "google" | "outlook" | "apple" | "caldav" | "gmail",
+    connectionType: raw.connection_type as "calendar" | "email_watch" | "both",
+    accountEmail: raw.account_email as string,
+    displayName: (raw.display_name as string) ?? null,
+    color: (raw.color as string) ?? null,
+    isEnabled: raw.is_enabled as boolean,
+    emailWatchEnabled: raw.email_watch_enabled as boolean,
+    lastSyncedAt: (raw.last_synced_at as string) ?? null,
+    syncStatus: raw.sync_status as "synced" | "syncing" | "error" | "disconnected",
+    errorMessage: (raw.error_message as string) ?? null,
+    calendars: (raw.sub_calendars as CalendarConnection["calendars"]) ?? [],
+  };
+}
+
 // ─────────────────────────────────────────────
 // Events
 // ─────────────────────────────────────────────
@@ -156,8 +174,14 @@ export async function dismissEmailEvent(eventId: string): Promise<void> {
  * GET /calendars
  * Fetches all connected calendar accounts with their sub-calendars.
  */
+// export async function getCalendarConnections(): Promise<CalendarConnection[]> {
+//   return apiFetch("GET", "/calendars");
+// }
+
+
 export async function getCalendarConnections(): Promise<CalendarConnection[]> {
-  return apiFetch("GET", "/calendars");
+  const raw = await apiFetch<Record<string, unknown>[]>("GET", "/calendars");
+  return raw.map(mapConnection);
 }
 
 /**
