@@ -124,7 +124,9 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
     ? connection.errorMessage || "Error — tap to fix"
     : connection.syncStatus === "syncing"
     ? "Syncing..."
-    : `Synced ${formatDistanceToNow(new Date(connection.lastSyncedAt))} ago ✓`;
+    :connection.lastSyncedAt
+    ? `Synced ${formatDistanceToNow(new Date(connection.lastSyncedAt))} ago ✓`
+    : "Not synced yet — tap to sync";
 
   /** Persists the toggle state; shows toast feedback on success/failure. */
   const handleToggle = async (enabled: boolean) => {
