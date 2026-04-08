@@ -117,8 +117,10 @@ export default function CalendarsView() {
  * The toggle calls `toggleCalendarVisibility()` with optimistic feedback.
  */
 function ConnectionRow({ connection }: { connection: CalendarConnection }) {
-  const icon = sourceIcons[connection.source];
-  const badge = connectionBadge[connection.connectionType];
+  // const icon = sourceIcons[connection.source];
+  // const badge = connectionBadge[connection.connectionType];
+  const icon = sourceIcons[connection.source] ?? { bg: "bg-muted", label: "?" };
+  const badge = connectionBadge[connection.connectionType] ?? { label: connection.connectionType, color: "bg-muted text-muted-foreground" };
   const isError = connection.syncStatus === "error";
   const syncLabel = isError
     ? connection.errorMessage || "Error — tap to fix"
