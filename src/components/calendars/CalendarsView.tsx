@@ -119,6 +119,7 @@ export default function CalendarsView() {
 function ConnectionRow({ connection }: { connection: CalendarConnection }) {
   // const icon = sourceIcons[connection.source];
   // const badge = connectionBadge[connection.connectionType];
+  console.log("connection data:", JSON.stringify(connection));
   const icon = sourceIcons[connection.source] ?? { bg: "bg-muted", label: "?" };
   const badge = connectionBadge[connection.connectionType] ?? { label: connection.connectionType, color: "bg-muted text-muted-foreground" };
   const isError = connection.syncStatus === "error";
