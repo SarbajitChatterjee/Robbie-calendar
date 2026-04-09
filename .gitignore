@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ──────────────────────────────────────────────
+# Secrets & Environment Variables
+# ──────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+secrets/*
+client_secret*.json
+credentials.json
+*.json.bak
