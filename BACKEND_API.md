@@ -1,10 +1,14 @@
 # Robbie — Backend API Contract
 
-> **Audience:** Backend engineers implementing the REST API server.
+> **Audience:** Backend engineers working on or extending the REST API server.
 >
 > The frontend calls these endpoints via `src/services/api.ts`.
 > Every request includes `Authorization: Bearer <token>` when the user is authenticated.
 > The backend is responsible for token validation, user identity extraction, and all database access.
+>
+> **Status key used in this document:**
+> - ✅ **Live** — implemented and deployed
+> - 🔜 **Planned** — frontend is wired and ready; backend implementation pending
 
 ---
 
@@ -12,13 +16,15 @@
 
 1. [Authentication](#authentication)
 2. [Error Response Format](#error-response-format)
-3. [Endpoints — Events](#endpoints--events)
-4. [Endpoints — Calendar Connections](#endpoints--calendar-connections)
-5. [Endpoints — Timezones](#endpoints--timezones)
-6. [Endpoints — User Settings](#endpoints--user-settings)
-7. [Endpoints — Data Management](#endpoints--data-management)
-8. [SQL DDL](#sql-ddl)
-9. [JSON Response Shapes](#json-response-shapes)
+3. [Endpoints — Health](#endpoints--health)
+4. [Endpoints — Events](#endpoints--events)
+5. [Endpoints — Calendar Connections](#endpoints--calendar-connections)
+6. [Endpoints — Timezones](#endpoints--timezones)
+7. [Endpoints — User Settings](#endpoints--user-settings)
+8. [Endpoints — Data Management](#endpoints--data-management)
+9. [SQL DDL](#sql-ddl)
+10. [JSON Response Shapes](#json-response-shapes)
+11. [Column Mapping Reference](#column-mapping-reference)
 
 ---
 
@@ -31,23 +37,23 @@ Authorization: Bearer <token>
 Content-Type: application/json
 ```
 
-The backend must:
-1. Validate the token
-2. Extract the `user_id` from it
-3. Scope all database queries to that user
-4. Return `401 Unauthorized` if the token is missing or invalid
+The backend:
+1. Validates the JWT against the Supabase JWKS endpoint (`JWKS_URL` in `.env`)
+2. Extracts `user_id` from the `sub` claim
+3. Scopes all database queries to that user
+4. Returns `401 Unauthorized` if the token is missing or invalid
 
-The frontend stores the token in `localStorage` under the key `"auth_token"`.
+The frontend syncs the Supabase session JWT into `localStorage` under `"auth_token"` via the `AuthGuard` in `App.tsx`. `api.ts` reads it from there and attaches it as the Bearer token on every request.
 
 ---
 
 ## Error Response Format
 
-On any error, return a JSON body with an `error` field:
+On any error, return a JSON body with a `detail` field (FastAPI default):
 
 ```json
 {
-  "error": "Human-readable error message shown to the user"
+  "detail": "Human-readable error message"
 }
 ```
 
@@ -60,9 +66,25 @@ Use appropriate HTTP status codes:
 
 ---
 
+## Endpoints — Health
+
+### ✅ `GET /health`
+
+Public endpoint — no authentication required. Used for uptime monitoring.
+
+**Response:** `200 OK`
+```json
+{
+  "status": "ok",
+  "version": "0.0.1"
+}
+```
+
+---
+
 ## Endpoints — Events
 
-### `GET /events?start=<ISO>&end=<ISO>`
+### ✅ `GET /events?start=<ISO>&end=<ISO>`
 
 Fetches all **confirmed** events within a date range for the authenticated user.
 
@@ -71,13 +93,13 @@ Fetches all **confirmed** events within a date range for the authenticated user.
 | `start` | ISO 8601 string (query) | Range start (inclusive) |
 | `end` | ISO 8601 string (query) | Range end (inclusive) |
 
-**Filter:** Only return events where `acceptance_status = 'accepted'`.
+**Filter:** Only returns events where `acceptance_status = 'accepted'`.
 
 **Response:** `200 OK` — `CalendarEvent[]` (see [JSON shapes](#calendarevent))
 
 ---
 
-### `GET /events/pending`
+### 🔜 `GET /events/pending`
 
 Fetches events detected from email that are awaiting user review.
 
@@ -87,7 +109,7 @@ Fetches events detected from email that are awaiting user review.
 
 ---
 
-### `POST /events/:id/accept`
+### 🔜 `POST /events/:id/accept`
 
 Accepts a pending event and assigns it to a target calendar.
 
@@ -104,7 +126,7 @@ Accepts a pending event and assigns it to a target calendar.
 
 ---
 
-### `POST /events/:id/dismiss`
+### 🔜 `POST /events/:id/dismiss`
 
 Dismisses a pending event (user chose to ignore it).
 
@@ -116,7 +138,7 @@ Dismisses a pending event (user chose to ignore it).
 
 ## Endpoints — Calendar Connections
 
-### `GET /calendars`
+### ✅ `GET /calendars`
 
 Fetches all connected calendar accounts for the authenticated user, including nested sub-calendars.
 
@@ -124,29 +146,41 @@ Fetches all connected calendar accounts for the authenticated user, including ne
 
 ---
 
-### `POST /calendars/connect/oauth`
+### ✅ `POST /calendars/connect/oauth`
 
-Initiates an OAuth flow for Google or Outlook.
+Initiates a Google OAuth flow.
 
 **Request body:**
 ```json
 {
-  "source": "google" | "outlook"
+  "source": "google",
+  "connection_type": "both"
 }
 ```
+
+> `source` must be `"google"` — other providers are not yet implemented.  
+> `connection_type` accepts `"calendar"`, `"email_watch"`, or `"both"`.
 
 **Response:** `200 OK`
 ```json
 {
-  "redirectUrl": "https://accounts.google.com/o/oauth2/..."
+  "redirect_auth_url": "https://accounts.google.com/o/oauth2/..."
 }
 ```
 
-The frontend will redirect the user to this URL. After completing OAuth, the backend should handle the callback, store the tokens, and redirect the user back to the app.
+The frontend redirects the user to `redirect_auth_url`. After the user completes Google auth, the backend callback handles the token exchange and redirects back to the app.
 
 ---
 
-### `POST /calendars/connect/apple`
+### ✅ `GET /auth/google/callback`
+
+Google OAuth callback — handled entirely by the backend. Not called directly by the frontend.
+
+Validates the PKCE `code_verifier` and signed JWT `state`, exchanges the authorisation code for tokens, fetches the user's Google email, encrypts and stores the tokens in `calendar_connections`, then redirects to the frontend.
+
+---
+
+### 🔜 `POST /calendars/connect/apple`
 
 Connects an Apple iCloud calendar via app-specific password.
 
@@ -162,7 +196,7 @@ Connects an Apple iCloud calendar via app-specific password.
 
 ---
 
-### `POST /calendars/connect/caldav`
+### 🔜 `POST /calendars/connect/caldav`
 
 Connects a generic CalDAV server.
 
@@ -179,7 +213,7 @@ Connects a generic CalDAV server.
 
 ---
 
-### `DELETE /calendars/:id`
+### 🔜 `DELETE /calendars/:id`
 
 Disconnects a calendar source and removes all its synced events.
 
@@ -187,7 +221,7 @@ Disconnects a calendar source and removes all its synced events.
 
 ---
 
-### `POST /calendars/sync`
+### 🔜 `POST /calendars/sync`
 
 Triggers an immediate calendar sync.
 
@@ -204,7 +238,7 @@ If `connectionId` is provided, sync only that connection. If `null` or omitted, 
 
 ---
 
-### `PATCH /calendars/:id/color`
+### 🔜 `PATCH /calendars/:id/color`
 
 Updates the display color for a calendar connection.
 
@@ -219,7 +253,7 @@ Updates the display color for a calendar connection.
 
 ---
 
-### `PATCH /calendars/:id/visibility`
+### 🔜 `PATCH /calendars/:id/visibility`
 
 Toggles whether a calendar's events appear in views.
 
@@ -234,7 +268,7 @@ Toggles whether a calendar's events appear in views.
 
 ---
 
-### `PATCH /calendars/:id/email-watch`
+### 🔜 `PATCH /calendars/:id/email-watch`
 
 Toggles email inbox watching for a connection.
 
@@ -251,58 +285,19 @@ Toggles email inbox watching for a connection.
 
 ## Endpoints — Timezones
 
-### `GET /timezones`
-
-Fetches all supported timezones, ordered by UTC offset. This is public reference data — no authentication required.
-
-**Response:** `200 OK` — `Timezone[]`
+> **Note:** Timezones are not served by the FastAPI backend. The frontend queries the `timezone` table in Supabase directly via the Supabase JS client (`useTimezones` hook). No backend endpoint is needed or planned for this.
 
 ---
 
 ## Endpoints — User Settings
 
-### `GET /user/settings`
-
-Fetches the authenticated user's preferences.
-
-**Response:** `200 OK` — `UserSettings`
-
-If no settings row exists yet (new user), the backend should return defaults:
-```json
-{
-  "userId": "...",
-  "homeTimezone": "UTC",
-  "showOrganizerTimezone": true,
-  "defaultCalendarId": "",
-  "firstDayOfWeek": "monday",
-  "emailDetectionMode": "ics_only",
-  "displayName": "",
-  "email": "",
-  "darkMode": false
-}
-```
-
----
-
-### `PATCH /user/settings`
-
-Partially updates user preferences. Only the fields present in the request body should be updated (merge semantics).
-
-**Request body:** Any subset of `UserSettings` fields (except `userId`):
-```json
-{
-  "homeTimezone": "Asia/Singapore",
-  "darkMode": true
-}
-```
-
-**Response:** `200 OK` — the full merged `UserSettings` object
+> **Note:** User settings are not served by the FastAPI backend. The frontend reads and writes the `user_settings` table in Supabase directly via `useUserSettings` and `useUpdateUserSettings` hooks. No backend endpoint is needed or planned for this.
 
 ---
 
 ## Endpoints — Data Management
 
-### `DELETE /user/data`
+### 🔜 `DELETE /user/data`
 
 Permanently deletes **all** user data: events, calendar connections, sub-calendars, and settings. This action is irreversible.
 
@@ -312,13 +307,86 @@ Permanently deletes **all** user data: events, calendar connections, sub-calenda
 
 ## SQL DDL
 
-Run this in your database to create the required tables.
+The live database schema. Run each block in Supabase SQL editor.
+
+> **Important:** The `user_settings` and `timezone` tables use the exact column names shown here — the frontend's generated types in `src/integrations/supabase/types.ts` are the source of truth for these two tables.
 
 ```sql
--- 1. Events
-CREATE TABLE events (
+-- 1. Users
+CREATE TABLE public.users (
+  user_id    BIGINT GENERATED BY DEFAULT AS IDENTITY NOT NULL,
+  firstname  CHARACTER VARYING NOT NULL,
+  lastname   CHARACTER VARYING NOT NULL,
+  email      CHARACTER VARYING NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
+  CONSTRAINT users_pkey PRIMARY KEY (user_id),
+  CONSTRAINT users_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES user_settings (user_id) ON DELETE CASCADE
+) TABLESPACE pg_default;
+
+-- 2. User settings (one row per user)
+-- Note: column names are camelCase as stored in Supabase
+CREATE TABLE public.user_settings (
+  user_id                UUID PRIMARY KEY,
+  email                  TEXT,
+  "displayName"          TEXT,
+  "homeTimezone"         TEXT DEFAULT 'UTC',
+  "firstDayOfWeek"       TEXT DEFAULT 'monday',       -- sunday | monday
+  "emailDetectionMode"   TEXT DEFAULT 'ics_only',     -- ics_only | smart
+  "darkMode"             BOOLEAN DEFAULT FALSE,
+  "showOrganizerTimezone" BOOLEAN DEFAULT TRUE,
+  "defaultCalendarId"    INTEGER,
+  created_at             TIMESTAMPTZ DEFAULT now()
+);
+
+-- 3. Timezone reference data
+-- Note: queried directly by the frontend — not via the backend API
+CREATE TABLE public.timezone (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tz_tag      TEXT UNIQUE NOT NULL,   -- IANA key, e.g. "Asia/Singapore"
+  tz_name     TEXT,                   -- Display name, e.g. "Singapore (SGT, UTC+8)"
+  tz_location TEXT,                   -- e.g. "Singapore"
+  utc_offset  TEXT,                   -- e.g. "UTC+08:00" or "08:00:00"
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+-- 4. Calendar connections
+CREATE TABLE public.calendar_connections (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id             UUID NOT NULL,
+  source              TEXT NOT NULL,               -- google | outlook | apple | caldav | gmail
+  connection_type     TEXT NOT NULL,               -- calendar | email_watch | both
+  account_email       TEXT NOT NULL,
+  display_name        TEXT,
+  color               TEXT,
+  is_enabled          BOOLEAN DEFAULT TRUE,
+  email_watch_enabled BOOLEAN DEFAULT FALSE,
+  access_token        TEXT,                        -- Fernet-encrypted
+  refresh_token       TEXT,                        -- Fernet-encrypted
+  last_synced_at      TIMESTAMPTZ,
+  sync_status         TEXT DEFAULT 'synced',       -- synced | syncing | error | disconnected
+  error_message       TEXT,
+  created_at          TIMESTAMPTZ DEFAULT now()
+);
+
+-- 5. Sub-calendars (nested under connections)
+-- Full DDL including RLS policies is in app/database/sub_calendar_SCHEMA.sql
+CREATE TABLE public.sub_calendars (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  connection_id UUID NOT NULL REFERENCES public.calendar_connections(id) ON DELETE CASCADE,
+  name          TEXT NOT NULL,
+  color         TEXT,
+  is_enabled    BOOLEAN DEFAULT TRUE,
+  is_read_only  BOOLEAN DEFAULT FALSE
+);
+
+ALTER TABLE public.sub_calendars ENABLE ROW LEVEL SECURITY;
+-- See app/database/sub_calendar_SCHEMA.sql for full RLS policies
+
+-- 6. Events
+CREATE TABLE public.events (
   id                     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id                UUID NOT NULL,          -- FK to your users table
+  user_id                UUID NOT NULL,
   title                  TEXT NOT NULL,
   start_time             TIMESTAMPTZ NOT NULL,
   end_time               TIMESTAMPTZ NOT NULL,
@@ -336,77 +404,17 @@ CREATE TABLE events (
   calendar_id            TEXT,
   calendar_name          TEXT,
   account_email          TEXT,
-  source                 TEXT NOT NULL,            -- google | apple | outlook | caldav
+  source                 TEXT NOT NULL,           -- google | apple | outlook | caldav
   color                  TEXT,
   is_read_only           BOOLEAN DEFAULT FALSE,
   html_link              TEXT,
   detected_from_email    BOOLEAN DEFAULT FALSE,
-  email_detection_method TEXT,                     -- ics_attachment | smart_parse
+  email_detection_method TEXT,                    -- ics_attachment | smart_parse
   email_sender           TEXT,
   email_snippet          TEXT,
   acceptance_status      TEXT DEFAULT 'pending_review',  -- accepted | pending_review | dismissed
   created_at             TIMESTAMPTZ DEFAULT now()
 );
-
--- 2. Calendar connections
-CREATE TABLE calendar_connections (
-  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id             UUID NOT NULL,
-  source              TEXT NOT NULL,               -- google | outlook | apple | caldav | gmail
-  connection_type     TEXT NOT NULL,                -- calendar | email_watch | both
-  account_email       TEXT NOT NULL,
-  display_name        TEXT,
-  color               TEXT,
-  is_enabled          BOOLEAN DEFAULT TRUE,
-  email_watch_enabled BOOLEAN DEFAULT FALSE,
-  last_synced_at      TIMESTAMPTZ,
-  sync_status         TEXT DEFAULT 'synced',        -- synced | syncing | error | disconnected
-  error_message       TEXT,
-  created_at          TIMESTAMPTZ DEFAULT now()
-);
-
--- 3. Sub-calendars (nested under connections)
-CREATE TABLE sub_calendars (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  connection_id UUID NOT NULL REFERENCES calendar_connections(id) ON DELETE CASCADE,
-  name          TEXT NOT NULL,
-  color         TEXT,
-  is_enabled    BOOLEAN DEFAULT TRUE,
-  is_read_only  BOOLEAN DEFAULT FALSE
-);
-
--- 4. User settings (one row per user)
-CREATE TABLE user_settings (
-  user_id               UUID PRIMARY KEY,          -- FK to your users table
-  home_timezone         TEXT DEFAULT 'UTC',
-  show_organizer_tz     BOOLEAN DEFAULT TRUE,
-  default_calendar_id   TEXT,
-  first_day_of_week     TEXT DEFAULT 'monday',     -- sunday | monday
-  email_detection_mode  TEXT DEFAULT 'ics_only',   -- ics_only | smart
-  display_name          TEXT,
-  email                 TEXT,
-  dark_mode             BOOLEAN DEFAULT FALSE
-);
-
--- 5. Timezones (reference/lookup — seed this with IANA timezone data)
-CREATE TABLE timezones (
-  id         SERIAL PRIMARY KEY,
-  name       TEXT NOT NULL,         -- e.g. "Singapore (SGT, UTC+8)"
-  iana_key   TEXT UNIQUE NOT NULL,  -- e.g. "Asia/Singapore"
-  location   TEXT,                  -- e.g. "Singapore"
-  utc_offset TEXT NOT NULL              -- e.g. '08:00:00' or '-05:00:00'
-);
-
--- 6. user
-create table public.users (
-  user_id bigint generated by default as identity not null,
-  firstname character varying not null,
-  lastname character varying not null,
-  email character varying null,
-  created_at timestamp with time zone not null default (now() AT TIME ZONE 'utc'::text),
-  constraint users_pkey primary key (user_id),
-  constraint users_user_id_fkey foreign KEY (user_id) references user_settings (user_id) on delete CASCADE
-) TABLESPACE pg_default;
 ```
 
 ---
@@ -484,39 +492,13 @@ These match the TypeScript interfaces in `src/types/index.ts`. The backend **mus
 }
 ```
 
-### UserSettings
-
-```json
-{
-  "userId": "uuid",
-  "homeTimezone": "Asia/Singapore",
-  "showOrganizerTimezone": true,
-  "defaultCalendarId": "primary",
-  "firstDayOfWeek": "monday",
-  "emailDetectionMode": "ics_only",
-  "displayName": "John Doe",
-  "email": "john@example.com",
-  "darkMode": false
-}
-```
-
-### Timezone
-
-```json
-{
-  "id": 1,
-  "name": "Singapore (SGT, UTC+8)",
-  "iana_key": "Asia/Singapore",
-  "location": "Singapore",
-  "utc_offset": "08:00:00"
-}
-```
-
 ---
 
 ## Column Mapping Reference
 
-The backend must transform database `snake_case` columns to `camelCase` JSON keys.
+The backend maps database `snake_case` columns to `camelCase` JSON keys. This mapping is handled in `api.ts` via `mapConnection()` for calendar connections; events are returned as-is from the DB and rely on the column names matching.
+
+> **Note:** `user_settings` and `timezone` columns are accessed directly by the frontend via Supabase JS — they are not transformed by the backend.
 
 | DB Column | JSON Key |
 |---|---|
@@ -547,9 +529,3 @@ The backend must transform database `snake_case` columns to `camelCase` JSON key
 | `last_synced_at` | `lastSyncedAt` |
 | `sync_status` | `syncStatus` |
 | `error_message` | `errorMessage` |
-| `home_timezone` | `homeTimezone` |
-| `show_organizer_tz` | `showOrganizerTimezone` |
-| `default_calendar_id` | `defaultCalendarId` |
-| `first_day_of_week` | `firstDayOfWeek` |
-| `email_detection_mode` | `emailDetectionMode` |
-| `dark_mode` | `darkMode` |
