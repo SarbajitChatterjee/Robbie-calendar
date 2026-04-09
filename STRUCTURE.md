@@ -1,7 +1,7 @@
 # Robbie — Project Architecture Guide
 
 > **Audience:** Any developer joining this project.  
-> **Last updated:** March 2026  
+> **Last updated:** April 2026  
 > **Maintainer:** Core team
 
 ---
@@ -21,7 +21,8 @@ Robbie is a **unified calendar aggregator** that merges events from Google Calen
 | Data Fetching | TanStack Query (React Query v5) |
 | Routing | React Router v6 |
 | Date Library | date-fns v3 |
-| Backend (planned) | Supabase (PostgreSQL + RLS + Edge Functions) |
+| Auth & DB | Supabase (PostgreSQL + RLS) |
+| Backend API | FastAPI (Python) — deployed on Render |
 
 ### Running Locally
 
@@ -29,7 +30,9 @@ Robbie is a **unified calendar aggregator** that merges events from Google Calen
 npm install
 npm run dev        # http://localhost:8080
 npm run build      # Production build
-npm run test       # Vitest
+npm run lint       # ESLint
+npm run test       # Vitest (single run)
+npm run test:watch # Vitest (watch mode)
 ```
 
 ---
@@ -38,7 +41,7 @@ npm run test       # Vitest
 
 ```
 src/
-├── App.tsx                    # Root component. Wraps the app in providers (QueryClient, Tooltip, Toasters, Router).
+├── App.tsx                    # Root component. Providers + Router + AuthGuard. Contains /auth and /auth/confirm routes.
 ├── main.tsx                   # Entry point. Mounts <App /> to #root.
 ├── index.css                  # Tailwind directives + design system tokens (light/dark).
 │
@@ -46,14 +49,21 @@ src/
 │   └── index.ts               # ALL shared TypeScript interfaces. Single source of truth for data shapes.
 │
 ├── services/
-│   └── api.ts                 # ⭐ SERVICE LAYER. The ONLY file the backend engineer touches.
-│                              #    Returns mock data now; swap to real HTTP calls later.
-│                              #    Every function has a JSDoc with the intended REST endpoint.
+│   └── api.ts                 # ⭐ REST API CLIENT. The ONLY file that calls the FastAPI backend.
+│                              #    Uses apiFetch() — a typed fetch wrapper that attaches the Bearer token.
+│                              #    Every function has a JSDoc with its REST endpoint.
+│
+├── integrations/
+│   └── supabase/
+│       ├── client.ts          # Supabase JS client. Auto-generated — do not edit.
+│       └── types.ts           # Generated DB types from Supabase CLI — do not edit.
 │
 ├── hooks/
-│   ├── useEvents.ts           # TanStack Query hooks for calendar events + pending inbox.
-│   ├── useCalendars.ts        # TanStack Query hook for calendar connections.
-│   └── useUserSettings.ts     # TanStack Query hook for user preferences.
+│   ├── useEvents.ts           # TanStack Query hooks for calendar events + pending inbox → calls api.ts
+│   ├── useCalendars.ts        # TanStack Query hook for calendar connections → calls api.ts
+│   ├── useUserSettings.ts     # Reads/writes user_settings directly via Supabase (not via backend)
+│   ├── useTimezones.ts        # Fetches timezone reference data directly via Supabase (staleTime: Infinity)
+│   └── use-mobile.tsx         # Responsive breakpoint hook (returns boolean for mobile viewport)
 │
 ├── components/
 │   ├── layout/
@@ -83,14 +93,19 @@ src/
 │   └── ui/                    # ⛔ DO NOT EDIT. Auto-generated shadcn/ui components.
 │
 ├── pages/
-│   ├── Index.tsx              # Route "/" — renders <AppLayout />.
-│   ├── Settings.tsx           # Settings view — timezone, display, email detection preferences.
+│   ├── Auth.tsx               # Login + Signup page. Two tabs — email/password auth via Supabase.
+│   ├── AuthConfirm.tsx        # Email confirmation handler. Writes user_settings row on first login.
+│   ├── Index.tsx              # Route "/" — renders <AppLayout />. Protected by AuthGuard.
+│   ├── Settings.tsx           # User preferences — timezone, display, email detection. Protected by AuthGuard.
 │   └── NotFound.tsx           # 404 catch-all.
 │
-├── styles/                    # (reserved for future extended stylesheets)
+├── test/
+│   ├── example.test.ts        # Example test file.
+│   └── setup.ts               # Vitest setup (jsdom environment).
 │
 └── lib/
-    └── utils.ts               # Tailwind `cn()` merge utility.
+    ├── utils.ts               # Tailwind `cn()` merge utility.
+    └── timezone-utils.ts      # UTC offset parsing, timezone formatting helpers for DB-driven timezone records.
 ```
 
 ### What goes where?
@@ -98,16 +113,21 @@ src/
 | I need to… | Put it in… |
 |:-----------|:-----------|
 | Add a new data type | `src/types/index.ts` |
-| Add a new API call | `src/services/api.ts` (mock first, real later) |
+| Add a new backend API call | `src/services/api.ts` |
+| Add a call that reads Supabase directly | `src/hooks/` (see `useUserSettings.ts` as a pattern) |
 | Add a new data-fetching hook | `src/hooks/` |
 | Add a new tab/view | `src/components/<domain>/` + register in `AppLayout.tsx` |
 | Add a reusable UI piece | `src/components/shared/` |
 | Add a new page route | `src/pages/` + register in `App.tsx` |
-| Change colors/tokens | `src/index.css` (core) or `src/styles/theme.css` (extended) |
+| Change colors/tokens | `src/index.css` |
 
 ---
 
 ## 3. Architecture & Data Flow
+
+There are **two data paths** in this app depending on what is being fetched:
+
+### Path A — Calendar & Event data (via FastAPI backend)
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -117,8 +137,7 @@ src/
                        │ call hooks
                        ▼
 ┌─────────────────────────────────────────────────────┐
-│                   Custom Hooks                       │
-│  useWeekEvents()  usePendingInbox()  useCalendars() │
+│           Custom Hooks (useEvents, useCalendars)     │
 │                                                      │
 │  Wraps TanStack Query:                               │
 │  • Caching, deduplication, background refetch        │
@@ -129,27 +148,51 @@ src/
 ┌─────────────────────────────────────────────────────┐
 │              Service Layer  (api.ts)                 │
 │                                                      │
-│  ⭐ THE ONLY FILE THE BACKEND ENGINEER MODIFIES      │
+│  ⭐ THE ONLY FILE THAT CALLS THE FASTAPI BACKEND     │
 │                                                      │
-│  Currently: returns mock data with simulated delay   │
-│  Future:    HTTP calls to Supabase / REST API        │
+│  apiFetch() attaches the Supabase JWT as Bearer      │
+│  token on every request.                             │
 │                                                      │
-│  Each function has a JSDoc with the intended         │
-│  REST endpoint (e.g., GET /api/events?start=&end=)   │
+│  Each function has a JSDoc with its REST endpoint.   │
 └──────────────────────┬──────────────────────────────┘
-                       │
+                       │ HTTP (Bearer token)
                        ▼
-              ┌─────────────────┐
-              │  Backend / API   │
-              │  (not yet wired) │
-              └─────────────────┘
+              ┌─────────────────────────┐
+              │  FastAPI Backend         │
+              │  (Render)               │
+              │                         │
+              │  Validates JWT via JWKS  │
+              │  Queries Supabase DB     │
+              └─────────────────────────┘
+```
+
+### Path B — Auth, Settings & Timezone data (direct Supabase)
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Components (Auth, Settings, AuthConfirm, etc.)      │
+└──────────────────────┬───────────────────────────────┘
+                       │ call hooks
+                       ▼
+┌──────────────────────────────────────────────────────┐
+│  useUserSettings / useTimezones / supabase.auth.*    │
+│                                                      │
+│  These hooks call Supabase directly — they do NOT    │
+│  go through api.ts or the FastAPI backend.           │
+└──────────────────────┬───────────────────────────────┘
+                       │ Supabase JS client
+                       ▼
+              ┌─────────────────────────┐
+              │  Supabase               │
+              │  (PostgreSQL + RLS)     │
+              └─────────────────────────┘
 ```
 
 ### Key Principle: Components never call `fetch()` directly.
 
-Every component gets data through hooks. Every hook calls a function in `api.ts`. This means:
+Every component gets data through hooks. Event and calendar data flows through `api.ts`. Auth, settings, and timezone data goes straight to Supabase. This means:
 
-1. **Swapping mock → real** requires changing only `api.ts`.
+1. **Backend integration** is isolated to `api.ts` — changing the backend URL or response shape only touches that file.
 2. **Caching strategy** lives in the hooks layer (TanStack Query).
 3. **Components stay pure UI** — they receive data and render it.
 
@@ -157,31 +200,55 @@ Every component gets data through hooks. Every hook calls a function in `api.ts`
 
 ## 4. Service Layer Contract
 
-`src/services/api.ts` is the integration boundary. Here's how it works:
+`src/services/api.ts` is the integration boundary for the FastAPI backend. Every function maps to a REST endpoint and uses the shared `apiFetch()` helper:
 
 ```typescript
-// Every function follows this pattern:
+// Core pattern — every function follows this:
 
-/** GET /api/events?start=&end=&timezone= */          // ← Intended endpoint
-export async function getEventsForDateRange(           // ← Typed signature
-  _start: Date,
-  _end: Date
-): Promise<CalendarEvent[]> {                          // ← Returns domain types
-  await delay();                                       // ← Simulated latency
-  return MOCK_EVENTS;                                  // ← Replace with fetch()
+/** GET /events?start=<ISO>&end=<ISO> */
+export async function getEventsForDateRange(
+  start: Date,
+  end: Date
+): Promise<CalendarEvent[]> {
+  return apiFetch(
+    "GET",
+    `/events?start=${start.toISOString()}&end=${end.toISOString()}`
+  );
 }
 ```
 
-**Rules for the backend engineer:**
+`apiFetch()` handles:
+- Prepending `VITE_API_BASE_URL` to the path
+- Attaching `Authorization: Bearer <token>` from `localStorage`
+- Parsing JSON and throwing typed errors on non-2xx responses
+- Returning `undefined` cleanly for `204 No Content`
 
-1. Keep the function signatures identical.
-2. Replace mock data with real HTTP calls.
-3. Throw standard errors — the hooks/components handle loading and error states via TanStack Query.
+**Rules for anyone modifying `api.ts`:**
+
+1. Keep function signatures identical — hooks and components depend on them.
+2. Use `apiFetch()` for all calls — do not call `fetch()` directly.
+3. Throw standard errors — TanStack Query in the hooks layer handles loading and error states.
 4. Do not import React or any UI code in this file.
+
+For the full endpoint list and expected request/response shapes, see `BACKEND_API.md`.
 
 ---
 
-## 5. Design System
+## 5. Authentication Flow
+
+Authentication is handled entirely by Supabase Auth. The `AuthGuard` component in `App.tsx`:
+
+1. Listens to `supabase.auth.onAuthStateChange`
+2. On login, writes the Supabase JWT to `localStorage` under `"auth_token"` so `api.ts` can attach it as a Bearer token
+3. On logout, removes the token from `localStorage`
+4. Redirects unauthenticated users to `/auth`
+5. Redirects authenticated users away from `/auth`
+
+On first login (after email confirmation), `AuthConfirm.tsx` reads `user_metadata` from the session and writes the initial `user_settings` row to Supabase.
+
+---
+
+## 6. Design System
 
 ### Tokens (CSS Custom Properties)
 
@@ -235,18 +302,15 @@ Two levels defined as CSS variables:
 
 ---
 
-## 6. Adding a New Feature — Checklist
-
-Follow this checklist when adding any new feature:
+## 7. Adding a New Feature — Checklist
 
 ### Step 1: Define the data shape
 - [ ] Add/update interfaces in `src/types/index.ts`
 - [ ] Add JSDoc comments explaining non-obvious fields
 
 ### Step 2: Add the service function
-- [ ] Add a mock function in `src/services/api.ts`
-- [ ] Include the intended REST endpoint as a JSDoc comment
-- [ ] Use the `delay()` helper to simulate network latency
+- [ ] Add the function to `src/services/api.ts` using `apiFetch()`
+- [ ] Include the REST endpoint as a JSDoc comment above the function
 
 ### Step 3: Create the hook
 - [ ] Add a TanStack Query hook in `src/hooks/`
@@ -269,7 +333,7 @@ Follow this checklist when adding any new feature:
 
 ---
 
-## 7. Conventions
+## 8. Conventions
 
 ### Naming
 - **Files:** PascalCase for components (`TodayView.tsx`), camelCase for hooks/services (`useEvents.ts`, `api.ts`).
@@ -293,25 +357,26 @@ Follow this checklist when adding any new feature:
 
 ---
 
-## 8. Testing
+## 9. Testing
 
 ```bash
 npm run test          # Single run
 npm run test:watch    # Watch mode
 ```
 
-- Test files live alongside source: `src/test/` or co-located `*.test.ts`.
+- Test files live in `src/test/` or co-located as `*.test.ts`.
 - Framework: Vitest + jsdom.
 - Focus tests on: service layer logic, hook behavior, utility functions.
 - UI components: test interaction logic, not visual rendering.
 
 ---
 
-## 9. Key Design Decisions (and why)
+## 10. Key Design Decisions (and why)
 
 | Decision | Rationale |
 |:---------|:----------|
-| **Mock-first service layer** | Enables frontend development without a backend. Backend engineer swaps mocks for real calls without touching UI code. |
+| **Single REST client (`api.ts`)** | All backend calls go through one file. Changing the backend URL, auth scheme, or response shape only touches `api.ts` — zero component changes needed. |
+| **Direct Supabase for auth/settings/timezones** | These are user-scoped, low-frequency reads with no business logic. Going direct to Supabase keeps the backend lean and avoids unnecessary round-trips. |
 | **TanStack Query over `useEffect`** | Built-in caching, deduplication, background refetch, loading/error states. Eliminates boilerplate. |
 | **CSS variables over Tailwind theme** | Enables runtime theme switching (dark mode) and keeps the design system in one place. |
 | **Bottom sheets over modals** | Mobile-first UX pattern. Sheets feel natural on touch devices and degrade gracefully on desktop. |
