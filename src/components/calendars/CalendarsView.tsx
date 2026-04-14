@@ -13,7 +13,7 @@
 
 import { useState } from "react";
 import { useCalendars } from "@/hooks/useCalendars";
-import { toggleCalendarVisibility } from "@/services/api";
+import { toggleCalendarVisibility, syncNow } from "@/services/api";
 import { CalendarConnection } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -152,10 +152,24 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${badge.color}`}>{badge.label}</span>
         </div>
         <p className="text-xs text-muted-foreground truncate">{connection.accountEmail}</p>
-        <p className={`text-xs mt-0.5 ${isError ? "text-[hsl(var(--status-error))]" : "text-[hsl(var(--status-success))]"}`}>
+        {/* <p className={`text-xs mt-0.5 ${isError ? "text-[hsl(var(--status-error))]" : "text-[hsl(var(--status-success))]"}`}>
           {isError && <AlertTriangle className="w-3 h-3 inline mr-1" />}
           {syncLabel}
-        </p>
+        </p> */}
+        <button
+            className={`text-xs mt-0.5 text-left ${isError ? "text-[hsl(var(--status-error))]" : "text-[hsl(var(--status-success))]"}`}
+            onClick={async () => {
+              try {
+                await syncNow(connection.id);
+                toast.success("Sync started!");
+              } catch {
+                toast.error("Sync failed — try again");
+              }
+            }}
+          >
+            {isError && <AlertTriangle className="w-3 h-3 inline mr-1" />}
+            {syncLabel}
+          </button>
       </div>
       {/* Color indicator strip */}
       <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: connection.color }} />
