@@ -123,6 +123,10 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
   const icon = sourceIcons[connection.source] ?? { bg: "bg-muted", label: "?" };
   const badge = connectionBadge[connection.connectionType] ?? { label: connection.connectionType, color: "bg-muted text-muted-foreground" };
   const isError = connection.syncStatus === "error";
+
+  // for showing loader animation
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const syncLabel = isError
     ? connection.errorMessage || "Error — tap to fix"
     : connection.syncStatus === "syncing"
@@ -152,24 +156,38 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${badge.color}`}>{badge.label}</span>
         </div>
         <p className="text-xs text-muted-foreground truncate">{connection.accountEmail}</p>
-        {/* <p className={`text-xs mt-0.5 ${isError ? "text-[hsl(var(--status-error))]" : "text-[hsl(var(--status-success))]"}`}>
+        <p className={`text-xs mt-0.5 ${isError ? "text-[hsl(var(--status-error))]" : "text-[hsl(var(--status-success))]"}`}>
           {isError && <AlertTriangle className="w-3 h-3 inline mr-1" />}
           {syncLabel}
-        </p> */}
+        </p>
+        {/* Sync button */}
         <button
-            className={`text-xs mt-0.5 text-left ${isError ? "text-[hsl(var(--status-error))]" : "text-[hsl(var(--status-success))]"}`}
-            onClick={async () => {
-              try {
-                await syncNow(connection.id);
-                toast.success("Sync started!");
-              } catch {
-                toast.error("Sync failed — try again");
-              }
-            }}
-          >
-            {isError && <AlertTriangle className="w-3 h-3 inline mr-1" />}
-            {syncLabel}
-          </button>
+          disabled={isSyncing}
+          onClick={async () => {
+            try {
+              setIsSyncing(true);
+              await syncNow(connection.id);
+              toast.success("Sync started!");
+            } catch {
+              toast.error("Sync failed — try again");
+            } finally {
+              setIsSyncing(false);
+            }
+          }}
+          className="text-xs px-3 py-1.5 rounded-[var(--radius-button)] border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSyncing ? (
+            <span className="flex items-center gap-1">
+              <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              Syncing...
+            </span>
+          ) : (
+            "Sync"
+          )}
+        </button>
       </div>
       {/* Color indicator strip */}
       <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: connection.color }} />
