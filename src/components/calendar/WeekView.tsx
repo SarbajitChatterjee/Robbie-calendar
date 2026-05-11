@@ -95,7 +95,7 @@ export default function WeekView() {
               </div>
             )}
 
-            {/* Event blocks — positioned absolutely based on start time and duration */}
+            {/* Event blocks — positioned absolutely based on start time and duration
             {events?.filter((e) => !e.isAllDay).map((event) => {
               const start = parseISO(event.start);
               const dayIdx = days.findIndex((d) => isSameDay(d, start));
@@ -124,7 +124,100 @@ export default function WeekView() {
                   {event.meetingLink && <Video className="w-3 h-3 mt-0.5 text-muted-foreground" />}
                 </button>
               );
-            })}
+            })} */}
+            {/* Event blocks — overlap-aware side-by-side layout */}
+            {(() => {
+              const timed = events?.filter((e) => !e.isAllDay) ?? [];
+              type Positioned = {
+                event: CalendarEvent;
+                top: number;
+                height: number;
+                dayIdx: number;
+                col: number;
+                cols: number;
+              };
+              const positioned: Positioned[] = [];
+
+              for (let dayIdx = 0; dayIdx < days.length; dayIdx++) {
+                const dayEvents = timed
+                  .filter((e) => isSameDay(parseISO(e.start), days[dayIdx]))
+                  .sort((a, b) => parseISO(a.start).getTime() - parseISO(b.start).getTime());
+
+                // Greedy column packing: place each event in the first free column.
+                const columns: { end: number }[][] = [];
+                const placements: {
+                  event: CalendarEvent;
+                  col: number;
+                  startMs: number;
+                  endMs: number;
+                }[] = [];
+
+                for (const ev of dayEvents) {
+                  const startMs = parseISO(ev.start).getTime();
+                  const endMs = parseISO(ev.end).getTime();
+                  let placed = false;
+                  for (let c = 0; c < columns.length; c++) {
+                    const last = columns[c][columns[c].length - 1];
+                    if (last.end <= startMs) {
+                      columns[c].push({ end: endMs });
+                      placements.push({ event: ev, col: c, startMs, endMs });
+                      placed = true;
+                      break;
+                    }
+                  }
+                  if (!placed) {
+                    columns.push([{ end: endMs }]);
+                    placements.push({ event: ev, col: columns.length - 1, startMs, endMs });
+                  }
+                }
+
+                // For each event, "cols" = max column-count across any cluster it overlaps.
+                for (const p of placements) {
+                  let cols = 1;
+                  for (const other of placements) {
+                    if (other.startMs < p.endMs && other.endMs > p.startMs) {
+                      cols = Math.max(cols, other.col + 1);
+                    }
+                  }
+                  const start = parseISO(p.event.start);
+                  const top = (start.getHours() - 7 + start.getMinutes() / 60) * HOUR_HEIGHT;
+                  const height = Math.max(
+                    (differenceInMinutes(parseISO(p.event.end), start) / 60) * HOUR_HEIGHT,
+                    22
+                  );
+                  positioned.push({ event: p.event, top, height, dayIdx, col: p.col, cols });
+                }
+              }
+
+              return positioned.map(({ event, top, height, dayIdx, col, cols }) => {
+                const start = parseISO(event.start);
+                return (
+                  <button
+                    key={event.id}
+                    onClick={() => setSelectedEvent(event)}
+                    className="absolute rounded-[10px] px-2 py-1 text-left text-xs overflow-hidden bg-card border border-border/60 shadow-sm transition-all duration-150 ease-out hover:shadow-md hover:-translate-y-px hover:border-border focus:outline-none focus:ring-2 focus:ring-[hsl(var(--fuse-primary))]/40"
+                    style={{
+                      top,
+                      height,
+                      left: `calc(3rem + ${dayIdx} * ((100% - 3rem) / 7) + ${col} * ((100% - 3rem) / 7 / ${cols}) + 2px)`,
+                      width: `calc((100% - 3rem) / 7 / ${cols} - 4px)`,
+                      borderLeft: `3px solid ${event.color}`,
+                      backgroundImage: `linear-gradient(to right, ${event.color}14, transparent 60%)`,
+                    }}
+                  >
+                    <p className="font-medium truncate leading-tight" style={{ color: event.color }}>
+                      {event.title}
+                    </p>
+                    <p className="text-muted-foreground truncate leading-tight">
+                      {format(start, "h:mm a")}
+                    </p>
+                    {event.meetingLink && (
+                      <Video className="w-3 h-3 mt-0.5 text-muted-foreground" />
+                    )}
+                  </button>
+                );
+              });
+            })()}
           </div>
         </div>
       )}

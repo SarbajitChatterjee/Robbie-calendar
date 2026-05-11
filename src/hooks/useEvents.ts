@@ -8,6 +8,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getEventsForDateRange, getPendingEmailEvents } from "@/services/api";
 import { startOfWeek, endOfWeek } from "date-fns";
+import { startOfMonth, endOfMonth } from "date-fns";
 
 /**
  * Fetches all confirmed events for the current week (Monday–Sunday).
@@ -32,5 +33,14 @@ export function usePendingInbox() {
   return useQuery({
     queryKey: ["events", "pending-inbox"],
     queryFn: getPendingEmailEvents,
+  });
+}
+
+export function useMonthEvents(month: Date) {
+  const start = startOfMonth(month);
+  const end = endOfMonth(month);
+  return useQuery({
+    queryKey: ["events", "month", start.toISOString()],
+    queryFn: () => getEventsForDateRange(start, end),
   });
 }
