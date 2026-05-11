@@ -14,7 +14,7 @@
 import { useState } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, isSameMonth, isSameDay, isToday, parseISO } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useWeekEvents } from "@/hooks/useEvents";
+import { useMonthEvents } from "@/hooks/useEvents";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { EventListSkeleton } from "@/components/shared/EventSkeleton";
 import { CalendarEvent } from "@/types";
@@ -24,12 +24,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 
 export default function MonthView() {
   const [monthOffset, setMonthOffset] = useState(0);
-  const { data: events, isLoading, isError, refetch } = useWeekEvents();
+  // const { data: events, isLoading, isError, refetch } = useWeekEvents();
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
   // Calculate the month boundaries and the full calendar grid range
   const currentMonth = addMonths(new Date(), monthOffset);
+  const { data: events, isLoading, isError, refetch } = useMonthEvents(currentMonth);
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const calStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Grid starts on Monday
@@ -54,10 +55,10 @@ export default function MonthView() {
   const getDotsForDay = (d: Date) => {
     if (!events) return [];
     const dayEvents = events.filter((e) => isSameDay(parseISO(e.start), d));
-    const sources = [...new Set(dayEvents.map((e) => e.color))];
-    return sources.slice(0, 3);
+    if (dayEvents.length === 0) return [];
+    const colors = [...new Set(dayEvents.map((e) => e.color ?? "hsl(var(--fuse-primary))"))] ;
+    return colors.slice(0, 3);
   };
-
   // Events for the selected day (shown in the bottom sheet)
   const dayEvents = selectedDay && events ? events.filter((e) => isSameDay(parseISO(e.start), selectedDay)) : [];
 
