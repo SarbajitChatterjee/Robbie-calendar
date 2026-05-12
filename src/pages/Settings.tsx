@@ -91,7 +91,7 @@ export default function SettingsView() {
       <div className="px-5 space-y-6">
         <SettingRow label="Home Timezone">
           <Select
-            defaultValue={settings.homeTimezone}
+            defaultValue={settings.home_timezone}
             /*onValueChange={(value) => saveSettingWithFeedback({ homeTimezone: value }, queryClient)}*/
             onValueChange={(value) => saveSettingWithFeedback({ homeTimezone: value }, updateSettings)}
           >
