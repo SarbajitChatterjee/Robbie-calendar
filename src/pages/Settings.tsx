@@ -134,7 +134,7 @@ export default function SettingsView() {
 
         <SettingRow label="Email detection">
           <Select
-            defaultValue={settings.emailDetectionMode}
+            defaultValue={settings.email_detection_mode}
             /*onValueChange={(value) => saveSettingWithFeedback({ emailDetectionMode: value as UserSettings["emailDetectionMode"] }, queryClient)}*/
             onValueChange={(value) => saveSettingWithFeedback({ emailDetectionMode: value as UserSettings["emailDetectionMode"] }, updateSettings)}
           >
