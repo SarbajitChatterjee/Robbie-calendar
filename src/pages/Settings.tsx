@@ -72,7 +72,7 @@ export default function SettingsView() {
   // const initials = settings.displayName.slice(0, 2).toUpperCase();
 
   // Better way of handling blanks:
-  const initials = (settings.displayName ?? "").slice(0, 2).toUpperCase() || "?";
+  const initials = (settings.display_name ?? "").slice(0, 2).toUpperCase() || "?";
 
   return (
     <div className="flex flex-col min-h-full pb-24">
@@ -82,7 +82,7 @@ export default function SettingsView() {
           {initials}
         </div>
         <div>
-          <h1 className="text-xl font-bold text-foreground">{settings.displayName}</h1>
+          <h1 className="text-xl font-bold text-foreground">{settings.display_name}</h1>
           <p className="text-sm text-muted-foreground">{settings.email}</p>
         </div>
       </header>
@@ -91,7 +91,7 @@ export default function SettingsView() {
       <div className="px-5 space-y-6">
         <SettingRow label="Home Timezone">
           <Select
-            defaultValue={settings.homeTimezone}
+            defaultValue={settings.home_timezone}
             /*onValueChange={(value) => saveSettingWithFeedback({ homeTimezone: value }, queryClient)}*/
             onValueChange={(value) => saveSettingWithFeedback({ homeTimezone: value }, updateSettings)}
           >
@@ -110,7 +110,7 @@ export default function SettingsView() {
 
         <SettingRow label="Show organizer timezone on events">
           <Switch
-            defaultChecked={settings.showOrganizerTimezone}
+            defaultChecked={settings.show_organizer_timezone}
             /*onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, queryClient)}*/
             onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, updateSettings)}
           />
@@ -118,9 +118,9 @@ export default function SettingsView() {
 
         <SettingRow label="First day of week">
           <Select
-            defaultValue={settings.firstDayOfWeek}
+            defaultValue={settings.first_day_of_week}
             /*onValueChange={(value) => saveSettingWithFeedback({ firstDayOfWeek: value as UserSettings["firstDayOfWeek"] }, queryClient)}*/
-            onValueChange={(value) => saveSettingWithFeedback({ firstDayOfWeek: value as UserSettings["firstDayOfWeek"] }, updateSettings)}
+            onValueChange={(value) => saveSettingWithFeedback({ first_day_of_week: value as UserSettings["firstDayOfWeek"] }, updateSettings)}
           >
             <SelectTrigger className="w-32 h-10 rounded-[var(--radius-button)]">
               <SelectValue />
@@ -134,7 +134,7 @@ export default function SettingsView() {
 
         <SettingRow label="Email detection">
           <Select
-            defaultValue={settings.emailDetectionMode}
+            defaultValue={settings.email_detection_mode}
             /*onValueChange={(value) => saveSettingWithFeedback({ emailDetectionMode: value as UserSettings["emailDetectionMode"] }, queryClient)}*/
             onValueChange={(value) => saveSettingWithFeedback({ emailDetectionMode: value as UserSettings["emailDetectionMode"] }, updateSettings)}
           >
@@ -151,7 +151,7 @@ export default function SettingsView() {
 
         <SettingRow label="Dark mode">
           <Switch
-            defaultChecked={settings.darkMode}
+            defaultChecked={settings.dark_mode}
             /*onCheckedChange={(checked) => saveSettingWithFeedback({ darkMode: checked }, queryClient)}*/
             onCheckedChange={(checked) => saveSettingWithFeedback({ darkMode: checked }, updateSettings)}
           />
