@@ -260,9 +260,9 @@ export async function toggleEmailWatch(
  * Fetches all supported timezones, ordered by UTC offset.
  */
 export async function getTimezones(): Promise<Timezone[]> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("timezone")
-    .select("tz_tag, tz_name");
+    .select("tz_tag, tz_name, tz_location, utc_offset");
 
   if (error) {
     console.error("Failed to fetch timezones:", error.message);
