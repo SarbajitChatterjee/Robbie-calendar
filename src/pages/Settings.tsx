@@ -72,7 +72,7 @@ export default function SettingsView() {
   // const initials = settings.displayName.slice(0, 2).toUpperCase();
 
   // Better way of handling blanks:
-  const initials = (settings.displayName ?? "").slice(0, 2).toUpperCase() || "?";
+  const initials = (settings.display_name ?? "").slice(0, 2).toUpperCase() || "?";
 
   return (
     <div className="flex flex-col min-h-full pb-24">
