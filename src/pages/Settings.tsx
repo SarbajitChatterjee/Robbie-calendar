@@ -118,9 +118,9 @@ export default function SettingsView() {
 
         <SettingRow label="First day of week">
           <Select
-            defaultValue={settings.firstDayOfWeek}
+            defaultValue={settings.first_day_of_week}
             /*onValueChange={(value) => saveSettingWithFeedback({ firstDayOfWeek: value as UserSettings["firstDayOfWeek"] }, queryClient)}*/
-            onValueChange={(value) => saveSettingWithFeedback({ firstDayOfWeek: value as UserSettings["firstDayOfWeek"] }, updateSettings)}
+            onValueChange={(value) => saveSettingWithFeedback({ first_day_of_week: value as UserSettings["firstDayOfWeek"] }, updateSettings)}
           >
             <SelectTrigger className="w-32 h-10 rounded-[var(--radius-button)]">
               <SelectValue />
