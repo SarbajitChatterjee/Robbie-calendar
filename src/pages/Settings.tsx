@@ -82,7 +82,7 @@ export default function SettingsView() {
           {initials}
         </div>
         <div>
-          <h1 className="text-xl font-bold text-foreground">{settings.displayName}</h1>
+          <h1 className="text-xl font-bold text-foreground">{settings.display_name}</h1>
           <p className="text-sm text-muted-foreground">{settings.email}</p>
         </div>
       </header>
