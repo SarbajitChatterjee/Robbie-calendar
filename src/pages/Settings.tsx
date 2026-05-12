@@ -151,7 +151,7 @@ export default function SettingsView() {
 
         <SettingRow label="Dark mode">
           <Switch
-            defaultChecked={settings.darkMode}
+            defaultChecked={settings.dark_mode}
             /*onCheckedChange={(checked) => saveSettingWithFeedback({ darkMode: checked }, queryClient)}*/
             onCheckedChange={(checked) => saveSettingWithFeedback({ darkMode: checked }, updateSettings)}
           />
