@@ -110,7 +110,7 @@ export default function SettingsView() {
 
         <SettingRow label="Show organizer timezone on events">
           <Switch
-            defaultChecked={settings.showOrganizerTimezone}
+            defaultChecked={settings.show_organizer_timezone}
             /*onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, queryClient)}*/
             onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, updateSettings)}
           />
