@@ -13,6 +13,7 @@
 
 import { useState } from "react";
 import { useCalendars } from "@/hooks/useCalendars";
+import { SourceLegend } from "@/components/shared/SourceLegend";
 import { toggleCalendarVisibility, syncNow } from "@/services/api";
 import { CalendarConnection } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,9 @@ export default function CalendarsView() {
     <div className="flex flex-col min-h-full pb-24">
       <header className="px-5 pt-6 pb-4">
         <h1 className="text-[28px] font-bold text-foreground">Calendars</h1>
+        <div className="mt-3 flex justify-center">
+          <SourceLegend />
+        </div>
       </header>
 
       {/* Section A: Connected calendar accounts */}
