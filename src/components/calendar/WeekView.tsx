@@ -19,6 +19,7 @@ import { CalendarEvent } from "@/types";
 import { EventDetailSheet } from "@/components/shared/EventDetailSheet";
 import { EventListSkeleton } from "@/components/shared/EventSkeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { SourceLegend } from "@/components/shared/SourceLegend";
 
 /** Visible hours in the grid: 7 AM through 8 PM (index 7–20). */
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7);
@@ -53,6 +54,9 @@ export default function WeekView() {
         <button onClick={() => setWeekOffset((o) => o + 1)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted">
           <ChevronRight className="w-5 h-5 text-foreground" />
         </button>
+          <div className="flex justify-center">     
+            <SourceLegend />  
+          </div> 
       </header>
 
       {/* Day column labels (Mon–Sun) with today highlighted */}

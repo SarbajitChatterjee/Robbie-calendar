@@ -22,6 +22,7 @@ import { EventListSkeleton } from "@/components/shared/EventSkeleton";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { TimezonePill } from "@/components/shared/TimezoneDisplay";
 import { Button } from "@/components/ui/button";
+import { SourceLegend } from "@/components/shared/SourceLegend";
 
 interface TodayViewProps {
   /** Callback to switch the active tab (e.g. navigate to Inbox). */
@@ -61,6 +62,10 @@ export default function TodayView({ onTabChange }: TodayViewProps) {
           Today, {format(new Date(), "EEEE d MMMM")}
         </h1>
         {settings && <TimezonePill timezone={settings.homeTimezone} />}
+
+        <div className="flex justify-center">
+          <SourceLegend />
+        </div> 
       </header>
 
       {/* Email invitation banner — visible when pending events exist */}
