@@ -14,115 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      // user_settings: {
-      //   Row: {
-      //     created_at: string
-      //     dark_mode: boolean
-      //     default_calendar_id: string
-      //     display_name: string
-      //     email: string
-      //     email_detection_mode: string
-      //     first_day_of_week: string
-      //     home_timezone: string
-      //     id: string
-      //     show_organizer_timezone: boolean
-      //     updated_at: string
-      //     user_id: string
-      //   }
-      //   Insert: {
-      //     created_at?: string
-      //     dark_mode?: boolean
-      //     default_calendar_id?: string
-      //     display_name?: string
-      //     email?: string
-      //     email_detection_mode?: string
-      //     first_day_of_week?: string
-      //     home_timezone?: string
-      //     id?: string
-      //     show_organizer_timezone?: boolean
-      //     updated_at?: string
-      //     user_id: string
-      //   }
-      //   Update: {
-      //     created_at?: string
-      //     dark_mode?: boolean
-      //     default_calendar_id?: string
-      //     display_name?: string
-      //     email?: string
-      //     email_detection_mode?: string
-      //     first_day_of_week?: string
-      //     home_timezone?: string
-      //     id?: string
-      //     show_organizer_timezone?: boolean
-      //     updated_at?: string
-      //     user_id?: string
-      //   }
-      //   Relationships: []
-      // }
       user_settings: {
         Row: {
-          user_id:            string
-          email:              string | null
-          displayName:        string | null
-          homeTimezone:       string
-          firstDayOfWeek:     string
-          emailDetectionMode: string
-          darkMode:           boolean
-          showOrganizerTimezone:  boolean
-          defaultCalendarId:  number | null
-          created_at:         string
+          created_at: string
+          dark_mode: boolean
+          default_calendar_id: string
+          display_name: string
+          email: string
+          email_detection_mode: string
+          first_day_of_week: string
+          home_timezone: string
+          id: string
+          show_organizer_timezone: boolean
+          updated_at: string
+          user_id: string
         }
         Insert: {
-          user_id:            string
-          email?:             string | null
-          displayName?:       string | null
-          homeTimezone?:      string
-          firstDayOfWeek?:    string
-          emailDetectionMode?: string
-          darkMode?:          boolean
-          showOrganizerTimezone?: boolean
-          defaultCalendarId?: number | null
-          created_at?:        string
+          created_at?: string
+          dark_mode?: boolean
+          default_calendar_id?: string
+          display_name?: string
+          email?: string
+          email_detection_mode?: string
+          first_day_of_week?: string
+          home_timezone?: string
+          id?: string
+          show_organizer_timezone?: boolean
+          updated_at?: string
+          user_id: string
         }
         Update: {
-          user_id?:           string
-          email?:             string | null
-          displayName?:       string | null
-          homeTimezone?:      string
-          firstDayOfWeek?:    string
-          emailDetectionMode?: string
-          darkMode?:          boolean
-          showOrganizerTimezone?: boolean
-          defaultCalendarId?: number | null
-          created_at?:        string
-        }
-        Relationships: []
-      }
-
-      timezone: {
-        Row: {
-          id:          string
-          tz_tag:      string
-          tz_name:     string | null
-          tz_location: string | null
-          utc_offset:  string | null
-          created_at:  string
-        }
-        Insert: {
-          id?:          string
-          tz_tag:       string
-          tz_name?:     string | null
-          tz_location?: string | null
-          utc_offset?:  string | null
-          created_at?:  string
-        }
-        Update: {
-          id?:          string
-          tz_tag?:      string
-          tz_name?:     string | null
-          tz_location?: string | null
-          utc_offset?:  string | null
-          created_at?:  string
+          created_at?: string
+          dark_mode?: boolean
+          default_calendar_id?: string
+          display_name?: string
+          email?: string
+          email_detection_mode?: string
+          first_day_of_week?: string
+          home_timezone?: string
+          id?: string
+          show_organizer_timezone?: boolean
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
