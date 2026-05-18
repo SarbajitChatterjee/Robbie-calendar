@@ -13,7 +13,14 @@
 
 import { useState } from "react";
 import { useCalendars } from "@/hooks/useCalendars";
-import { toggleCalendarVisibility, syncNow } from "@/services/api";
+// import { toggleCalendarVisibility, syncNow } from "@/services/api";
+import {
+  toggleCalendarVisibility,
+  syncNow,
+  disconnectCalendar,
+  updateCalendarColor,
+  toggleEmailWatch,
+} from "@/services/api";
 import { CalendarConnection } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -24,6 +31,19 @@ import { formatDistanceToNow } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { initiateOAuthConnection } from "@/services/api";
+
+import { useQueryClient } from "@tanstack/react-query";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { MoreHorizontal, Palette, Mail, Trash2 } from "lucide-react";
 
 /** Icon config for each calendar source type. */
 const sourceIcons: Record<string, { bg: string; label: string }> = {
@@ -127,6 +147,51 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
   // for showing loader animation
   const [isSyncing, setIsSyncing] = useState(false);
 
+  const qc = useQueryClient();
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  const [colorOpen, setColorOpen] = useState(false);
+
+  const COLOR_PRESETS = [
+    "#C8B800", "#0078D4", "#FF3B30", "#34C759",
+    "#AF52DE", "#FF9500", "#5AC8FA", "#8E8E93",
+  ];
+
+  const canWatchEmail = connection.connectionType !== "calendar";
+
+  const handleColorChange = async (next: string) => {
+    try {
+      await updateCalendarColor(connection.id, next);
+      await qc.invalidateQueries({ queryKey: ["calendars"] });
+      setColorOpen(false);
+      toast.success("Color updated");
+    } catch {
+      toast.error("Couldn't update color");
+    }
+  };
+
+  const handleEmailWatchToggle = async (next: boolean) => {
+    try {
+      await toggleEmailWatch(connection.id, next);
+      await qc.invalidateQueries({ queryKey: ["calendars"] });
+      toast.success(next ? "Email watch on" : "Email watch off");
+    } catch {
+      toast.error("Couldn't update email watch");
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      await disconnectCalendar(connection.id);
+      await qc.invalidateQueries({ queryKey: ["calendars"] });
+      await qc.invalidateQueries({ queryKey: ["events"] });
+      toast.success("Calendar disconnected");
+    } catch {
+      toast.error("Couldn't disconnect — try again");
+    } finally {
+      setConfirmDisconnect(false);
+    }
+  };
+
   const syncLabel = isError
     ? connection.errorMessage || "Error — tap to fix"
     : connection.syncStatus === "syncing"
@@ -190,8 +255,94 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
         </button>
       </div>
       {/* Color indicator strip */}
-      <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: connection.color }} />
+      {/* <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: connection.color }} />
+      <Switch defaultChecked={connection.isEnabled} onCheckedChange={handleToggle} /> */}
+      {/* Color swatch — click to open color picker */}
+      <Popover open={colorOpen} onOpenChange={setColorOpen}>
+        <PopoverTrigger asChild>
+          <button
+            aria-label="Change color"
+            className="w-1.5 h-8 rounded-full flex-shrink-0 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            style={{ backgroundColor: connection.color }}
+          />
+        </PopoverTrigger>
+        <PopoverContent className="w-56 p-3 rounded-[var(--radius-card)]" align="end">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Calendar color</p>
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {COLOR_PRESETS.map((c) => (
+              <button
+                key={c}
+                onClick={() => handleColorChange(c)}
+                aria-label={`Set color ${c}`}
+                className={`w-9 h-9 rounded-full transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                  connection.color?.toLowerCase() === c.toLowerCase()
+                    ? "ring-2 ring-foreground ring-offset-2"
+                    : ""
+                }`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+            <input
+              type="color"
+              value={connection.color || "#000000"}
+              onChange={(e) => handleColorChange(e.target.value)}
+              className="w-6 h-6 rounded cursor-pointer border border-border"
+            />
+            Custom color
+          </label>
+        </PopoverContent>
+      </Popover>
+
+      {/* Overflow menu — change color, email watch, disconnect */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            aria-label="More actions"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52 rounded-[var(--radius-card)]">
+          <DropdownMenuItem onClick={() => setColorOpen(true)}>
+            <Palette className="w-4 h-4 mr-2" />
+            Change color
+          </DropdownMenuItem>
+          {canWatchEmail && (
+            <DropdownMenuCheckboxItem
+              checked={connection.emailWatchEnabled}
+              onCheckedChange={handleEmailWatchToggle}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Watch inbox
+            </DropdownMenuCheckboxItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => setConfirmDisconnect(true)}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Disconnect
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Visibility toggle — unchanged */}
       <Switch defaultChecked={connection.isEnabled} onCheckedChange={handleToggle} />
+
+      {/* Confirm dialog for disconnect */}
+      <ConfirmDialog
+        open={confirmDisconnect}
+        onOpenChange={setConfirmDisconnect}
+        title="Disconnect this calendar?"
+        description={`We'll remove ${connection.displayName} (${connection.accountEmail}) and stop syncing its events. You can reconnect it later.`}
+        confirmLabel="Disconnect"
+        destructive
+        onConfirm={handleDisconnect}
+      />
     </div>
   );
 }
