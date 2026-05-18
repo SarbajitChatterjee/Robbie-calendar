@@ -38,12 +38,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuCheckboxItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { MoreHorizontal, Palette, Mail, Trash2 } from "lucide-react";
+// import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { MoreHorizontal, Mail, Trash2 } from "lucide-react";
 
 /** Icon config for each calendar source type. */
 const sourceIcons: Record<string, { bg: string; label: string }> = {
@@ -149,7 +148,7 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
 
   const qc = useQueryClient();
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
-  const [colorOpen, setColorOpen] = useState(false);
+  // const [colorOpen, setColorOpen] = useState(false);
 
   const COLOR_PRESETS = [
     "#C8B800", "#0078D4", "#FF3B30", "#34C759",
@@ -162,7 +161,7 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
     try {
       await updateCalendarColor(connection.id, next);
       await qc.invalidateQueries({ queryKey: ["calendars"] });
-      setColorOpen(false);
+      // setColorOpen(false);
       toast.success("Color updated");
     } catch {
       toast.error("Couldn't update color");
@@ -219,6 +218,12 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
         <div className="flex items-center gap-2">
           <p className="font-medium text-foreground truncate">{connection.displayName}</p>
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${badge.color}`}>{badge.label}</span>
+          {connection.emailWatchEnabled && connection.connectionType !== "calendar" && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-[hsl(38,92%,88%)] text-[hsl(38,70%,35%)]">
+              <Mail className="w-2.5 h-2.5" />
+              Watching
+            </span>
+          )}
         </div>
         <p className="text-xs text-muted-foreground truncate">{connection.accountEmail}</p>
         <p className={`text-xs mt-0.5 ${isError ? "text-[hsl(var(--status-error))]" : "text-[hsl(var(--status-success))]"}`}>
@@ -257,43 +262,13 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
       {/* Color indicator strip */}
       {/* <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: connection.color }} />
       <Switch defaultChecked={connection.isEnabled} onCheckedChange={handleToggle} /> */}
-      {/* Color swatch — click to open color picker */}
-      <Popover open={colorOpen} onOpenChange={setColorOpen}>
-        <PopoverTrigger asChild>
-          <button
-            aria-label="Change color"
-            className="w-1.5 h-8 rounded-full flex-shrink-0 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            style={{ backgroundColor: connection.color }}
-          />
-        </PopoverTrigger>
-        <PopoverContent className="w-56 p-3 rounded-[var(--radius-card)]" align="end">
-          <p className="text-xs font-medium text-muted-foreground mb-2">Calendar color</p>
-          <div className="grid grid-cols-4 gap-2 mb-3">
-            {COLOR_PRESETS.map((c) => (
-              <button
-                key={c}
-                onClick={() => handleColorChange(c)}
-                aria-label={`Set color ${c}`}
-                className={`w-9 h-9 rounded-full transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                  connection.color?.toLowerCase() === c.toLowerCase()
-                    ? "ring-2 ring-foreground ring-offset-2"
-                    : ""
-                }`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
-          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-            <input
-              type="color"
-              value={connection.color || "#000000"}
-              onChange={(e) => handleColorChange(e.target.value)}
-              className="w-6 h-6 rounded cursor-pointer border border-border"
-            />
-            Custom color
-          </label>
-        </PopoverContent>
-      </Popover>
+
+      {/* Color indicator — color is now edited from the menu */}
+      <div
+        aria-hidden="true"
+        className="w-1.5 h-8 rounded-full flex-shrink-0"
+        style={{ backgroundColor: connection.color }}
+      />
 
       {/* Overflow menu — change color, email watch, disconnect */}
       <DropdownMenu>
@@ -305,21 +280,61 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
             <MoreHorizontal className="w-4 h-4" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-52 rounded-[var(--radius-card)]">
-          <DropdownMenuItem onClick={() => setColorOpen(true)}>
-            <Palette className="w-4 h-4 mr-2" />
-            Change color
-          </DropdownMenuItem>
-          {canWatchEmail && (
-            <DropdownMenuCheckboxItem
-              checked={connection.emailWatchEnabled}
-              onCheckedChange={handleEmailWatchToggle}
-            >
-              <Mail className="w-4 h-4 mr-2" />
-              Watch inbox
-            </DropdownMenuCheckboxItem>
-          )}
+       <DropdownMenuContent align="end" className="w-64 rounded-[var(--radius-card)] p-2">
+          {/* Inline color picker — no nested popover, so no flash */}
+          <div className="px-2 pt-1 pb-2">
+            <p className="text-[11px] font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+              Calendar color
+            </p>
+            <div className="grid grid-cols-8 gap-1.5 mb-2">
+              {COLOR_PRESETS.map((c) => {
+                const selected = connection.color?.toLowerCase() === c.toLowerCase();
+                return (
+                  <button
+                    key={c}
+                    onClick={() => handleColorChange(c)}
+                    aria-label={`Set color ${c}`}
+                    className={`w-5 h-5 rounded-full transition-transform hover:scale-110 focus:outline-none ${
+                      selected ? "ring-2 ring-foreground ring-offset-1" : ""
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                );
+              })}
+            </div>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <input
+                type="color"
+                value={connection.color || "#000000"}
+                onChange={(e) => handleColorChange(e.target.value)}
+                className="w-5 h-5 rounded cursor-pointer border border-border"
+              />
+              Custom color
+            </label>
+          </div>
+
           <DropdownMenuSeparator />
+
+          {/* Watch inbox — clear on/off Switch; menu stays open on toggle */}
+          {canWatchEmail && (
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              className="flex items-center justify-between gap-2 cursor-pointer"
+            >
+              <span className="flex items-center">
+                <Mail className="w-4 h-4 mr-2" />
+                Watch inbox
+              </span>
+              <Switch
+                checked={!!connection.emailWatchEnabled}
+                onCheckedChange={handleEmailWatchToggle}
+                className="scale-75"
+              />
+            </DropdownMenuItem>
+          )}
+
+          <DropdownMenuSeparator />
+
           <DropdownMenuItem
             onClick={() => setConfirmDisconnect(true)}
             className="text-destructive focus:text-destructive"
