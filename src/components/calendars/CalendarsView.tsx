@@ -19,7 +19,8 @@ import {
   syncNow,
   disconnectCalendar,
   updateCalendarColor,
-  toggleEmailWatch,
+  startEmailWatch,
+  stopEmailWatch,
 } from "@/services/api";
 import { CalendarConnection } from "@/types";
 import { Button } from "@/components/ui/button";
