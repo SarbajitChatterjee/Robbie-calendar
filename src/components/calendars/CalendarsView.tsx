@@ -146,6 +146,7 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
 
   // for showing loader animation
   const [isSyncing, setIsSyncing] = useState(false);
+  const [watchPending, setWatchPending] = useState(false);
 
   const qc = useQueryClient();
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -161,8 +162,10 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
   const handleColorChange = async (next: string) => {
     try {
       await updateCalendarColor(connection.id, next);
-      await qc.invalidateQueries({ queryKey: ["calendars"] });
-      // setColorOpen(false);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["calendars"] }),
+        qc.invalidateQueries({ queryKey: ["events"] }),
+      ]);
       toast.success("Color updated");
     } catch {
       toast.error("Couldn't update color");
@@ -170,12 +173,23 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
   };
 
   const handleEmailWatchToggle = async (next: boolean) => {
+    if (watchPending) return;
+    setWatchPending(true);
     try {
-      await toggleEmailWatch(connection.id, next);
+      if (next) {
+        await startEmailWatch(connection.id);
+        toast.success("Email watch on — scanning started");
+      } else {
+        await stopEmailWatch(connection.id);
+        toast.success("Email watch off");
+      }
       await qc.invalidateQueries({ queryKey: ["calendars"] });
-      toast.success(next ? "Email watch on" : "Email watch off");
-    } catch {
-      toast.error("Couldn't update email watch");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Couldn't update email watch";
+      toast.error(msg);
+      await qc.invalidateQueries({ queryKey: ["calendars"] });
+    } finally {
+      setWatchPending(false);
     }
   };
 
