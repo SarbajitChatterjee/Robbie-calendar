@@ -244,12 +244,14 @@ Updates the display color for a calendar connection.
 
 **Request body:**
 ```json
-{
-  "color": "#4285F4"
-}
+{ "color": "#4285F4" }
 ```
 
+**Action:** Update `color` on `calendar_connections`. Events served by `GET /events` derive their `color` from the parent connection, so subsequent event fetches must reflect the new color (either via a JOIN at read time, or by cascading the new color into the connection's existing event rows). The frontend invalidates its `["events"]` cache on a 2xx response and re-fetches.
+
 **Response:** `204 No Content`
+
+> If your backend currently stores `color` as a denormalized snapshot on each `events` row, the cascade above is **required** — otherwise the refetch will still return the old color. The frontend invalidate alone cannot fix stale DB values.
 
 ---
 
@@ -268,20 +270,39 @@ Toggles whether a calendar's events appear in views.
 
 ---
 
-### 🔜 `PATCH /calendars/:id/email-watch`
+### 🔜 `POST /calendars/:id/email-watch/start`
 
-Toggles email inbox watching for a connection.
+Enables email-watch for a connection in a guarded sequence:
 
-**Request body:**
-```json
-{
-  "enabled": true
-}
-```
+1. Run `fetchEmails(connectionId)` (pull latest inbox state).
+2. On success (HTTP 2xx from the fetch step), run `emailScan(connectionId)` (LLM detection pipeline).
+3. **Only if both steps succeed**, set `email_watch_enabled = true` on `calendar_connections`.
+4. If any step fails, leave `email_watch_enabled = false` and return a non-2xx with `{ "detail": "..." }`.
 
-**Response:** `204 No Content`
+**Response (success):** `204 No Content`
+**Response (failure):** `4xx`/`5xx` with `{ "detail": "..." }` — DB state unchanged.
 
 ---
+
+### 🔜 `POST /calendars/:id/email-watch/stop`
+
+Disables email-watch for a connection:
+
+1. Stop the inbox watcher / scan worker for this connection.
+2. **Only if the stop succeeds**, set `email_watch_enabled = false`.
+3. On failure, leave `email_watch_enabled = true` and return a non-2xx.
+
+**Response (success):** `204 No Content`
+**Response (failure):** `4xx`/`5xx` with `{ "detail": "..." }` — DB state unchanged.
+
+---
+
+### Reading current email-watch status
+
+There is **no separate status endpoint**. The current value of `email_watch_enabled` is included on every `GET /calendars` response, so the frontend simply re-fetches that list after a start/stop call.
+
+---
+
 
 ## Endpoints — Timezones
 

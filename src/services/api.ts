@@ -263,16 +263,22 @@ export async function toggleCalendarVisibility(
 }
 
 /**
- * PATCH /calendars/:id/email-watch
- * Toggles email inbox watching for a connection.
+ * POST /calendars/:id/email-watch/start
+ * Backend runs fetchEmails() → emailScan(); only on full success does it
+ * set email_watch_enabled = true. On any failure, DB stays false and a
+ * non-2xx is returned so the UI can revert.
  */
-export async function toggleEmailWatch(
-  connectionId: string,
-  enabled: boolean
-): Promise<void> {
-  return apiFetch("PATCH", `/calendars/${connectionId}/email-watch`, {
-    enabled,
-  });
+export async function startEmailWatch(connectionId: string): Promise<void> {
+  return apiFetch("POST", `/calendars/${connectionId}/email-watch/start`);
+}
+
+/**
+ * POST /calendars/:id/email-watch/stop
+ * Backend stops the watcher; only on success does it set
+ * email_watch_enabled = false.
+ */
+export async function stopEmailWatch(connectionId: string): Promise<void> {
+  return apiFetch("POST", `/calendars/${connectionId}/email-watch/stop`);
 }
 
 // ─────────────────────────────────────────────

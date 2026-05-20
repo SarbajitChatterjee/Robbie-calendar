@@ -19,7 +19,8 @@ import {
   syncNow,
   disconnectCalendar,
   updateCalendarColor,
-  toggleEmailWatch,
+  startEmailWatch,
+  stopEmailWatch,
 } from "@/services/api";
 import { CalendarConnection } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 // import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { MoreHorizontal, Mail, Trash2 } from "lucide-react";
+import { MoreHorizontal, Mail, Trash2, RefreshCw } from "lucide-react";
 
 /** Icon config for each calendar source type. */
 const sourceIcons: Record<string, { bg: string; label: string }> = {
@@ -145,6 +146,7 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
 
   // for showing loader animation
   const [isSyncing, setIsSyncing] = useState(false);
+  const [watchPending, setWatchPending] = useState(false);
 
   const qc = useQueryClient();
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -160,8 +162,10 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
   const handleColorChange = async (next: string) => {
     try {
       await updateCalendarColor(connection.id, next);
-      await qc.invalidateQueries({ queryKey: ["calendars"] });
-      // setColorOpen(false);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["calendars"] }),
+        qc.invalidateQueries({ queryKey: ["events"] }),
+      ]);
       toast.success("Color updated");
     } catch {
       toast.error("Couldn't update color");
@@ -169,12 +173,23 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
   };
 
   const handleEmailWatchToggle = async (next: boolean) => {
+    if (watchPending) return;
+    setWatchPending(true);
     try {
-      await toggleEmailWatch(connection.id, next);
+      if (next) {
+        await startEmailWatch(connection.id);
+        toast.success("Email watch on — scanning started");
+      } else {
+        await stopEmailWatch(connection.id);
+        toast.success("Email watch off");
+      }
       await qc.invalidateQueries({ queryKey: ["calendars"] });
-      toast.success(next ? "Email watch on" : "Email watch off");
-    } catch {
-      toast.error("Couldn't update email watch");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Couldn't update email watch";
+      toast.error(msg);
+      await qc.invalidateQueries({ queryKey: ["calendars"] });
+    } finally {
+      setWatchPending(false);
     }
   };
 
@@ -230,34 +245,6 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
           {isError && <AlertTriangle className="w-3 h-3 inline mr-1" />}
           {syncLabel}
         </p>
-        {/* Sync button */}
-        <button
-          disabled={isSyncing}
-          onClick={async () => {
-            try {
-              setIsSyncing(true);
-              await syncNow(connection.id);
-              toast.success("Sync started!");
-            } catch {
-              toast.error("Sync failed — try again");
-            } finally {
-              setIsSyncing(false);
-            }
-          }}
-          className="text-xs px-3 py-1.5 rounded-[var(--radius-button)] border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSyncing ? (
-            <span className="flex items-center gap-1">
-              <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-              </svg>
-              Syncing...
-            </span>
-          ) : (
-            "Sync"
-          )}
-        </button>
       </div>
       {/* Color indicator strip */}
       {/* <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: connection.color }} />
@@ -269,6 +256,29 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
         className="w-1.5 h-8 rounded-full flex-shrink-0"
         style={{ backgroundColor: connection.color }}
       />
+
+      {/* Sync — icon button, matches the … menu style */}
+      <button
+        aria-label={isSyncing ? "Syncing" : "Sync now"}
+        disabled={isSyncing}
+        onClick={async () => {
+          try {
+            setIsSyncing(true);
+            await syncNow(connection.id);
+            await qc.invalidateQueries({ queryKey: ["calendars"] });
+            await qc.invalidateQueries({ queryKey: ["events"] });
+            toast.success("Sync started");
+          } catch {
+            toast.error("Sync failed — try again");
+          } finally {
+            setIsSyncing(false);
+          }
+        }}
+        className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
+      </button>
+
 
       {/* Overflow menu — change color, email watch, disconnect */}
       <DropdownMenu>
@@ -315,7 +325,7 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
 
           <DropdownMenuSeparator />
 
-          {/* Watch inbox — clear on/off Switch; menu stays open on toggle */}
+          {/* Watch inbox — clear on/off Switch with status label; menu stays open on toggle */}
           {canWatchEmail && (
             <DropdownMenuItem
               onSelect={(e) => e.preventDefault()}
@@ -323,10 +333,18 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
             >
               <span className="flex items-center">
                 <Mail className="w-4 h-4 mr-2" />
-                Watch inbox
+                <span className="flex flex-col leading-tight">
+                  <span>Watch inbox</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {watchPending
+                      ? (connection.emailWatchEnabled ? "Stopping…" : "Starting scan…")
+                      : (connection.emailWatchEnabled ? "On" : "Off")}
+                  </span>
+                </span>
               </span>
               <Switch
                 checked={!!connection.emailWatchEnabled}
+                disabled={watchPending}
                 onCheckedChange={handleEmailWatchToggle}
                 className="scale-75"
               />
