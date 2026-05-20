@@ -325,7 +325,7 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
 
           <DropdownMenuSeparator />
 
-          {/* Watch inbox — clear on/off Switch; menu stays open on toggle */}
+          {/* Watch inbox — clear on/off Switch with status label; menu stays open on toggle */}
           {canWatchEmail && (
             <DropdownMenuItem
               onSelect={(e) => e.preventDefault()}
@@ -333,10 +333,18 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
             >
               <span className="flex items-center">
                 <Mail className="w-4 h-4 mr-2" />
-                Watch inbox
+                <span className="flex flex-col leading-tight">
+                  <span>Watch inbox</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {watchPending
+                      ? (connection.emailWatchEnabled ? "Stopping…" : "Starting scan…")
+                      : (connection.emailWatchEnabled ? "On" : "Off")}
+                  </span>
+                </span>
               </span>
               <Switch
                 checked={!!connection.emailWatchEnabled}
+                disabled={watchPending}
                 onCheckedChange={handleEmailWatchToggle}
                 className="scale-75"
               />
