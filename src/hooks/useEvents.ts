@@ -7,18 +7,18 @@
  */
 
 import { useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getEventsForDateRange, getPendingEmailEvents } from "@/services/api";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { CalendarEvent, CalendarConnection } from "@/types";
+import { useCalendars } from "@/hooks/useCalendars";
 
 /**
  * Overlay the parent connection's current color onto each event.
  * Reads the ["calendars"] cache directly — no extra fetch.
  */
 function useColoredEvents(events: CalendarEvent[] | undefined): CalendarEvent[] | undefined {
-  const qc = useQueryClient();
-  const connections = qc.getQueryData<CalendarConnection[]>(["calendars"]);
+  const { data: connections } = useCalendars();
 
   return useMemo(() => {
     if (!events) return events;
@@ -32,6 +32,10 @@ function useColoredEvents(events: CalendarEvent[] | undefined): CalendarEvent[] 
       if (c.id) {
         if (c.color) colorById.set(c.id, c.color);
         enabledById.set(c.id, c.isEnabled);
+      }
+      for (const sub of c.calendars ?? []) {
+        if (sub.color) colorById.set(sub.id, sub.color);
+        enabledById.set(sub.id, c.isEnabled && sub.isEnabled);
       }
       if (c.accountEmail) {
         const key = c.accountEmail.toLowerCase();

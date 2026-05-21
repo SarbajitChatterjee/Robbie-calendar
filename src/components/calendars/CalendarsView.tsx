@@ -219,7 +219,7 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
     try {
       await toggleCalendarVisibility(connection.id, enabled);
       await Promise.all([
-        qc.invalidateQueries({ queryKey: ["calendars"] }),
+        qc.refetchQueries({ queryKey: ["calendars"], type: "active" }),
         qc.invalidateQueries({ queryKey: ["events"] }),
       ]);
       toast.success(enabled ? "Calendar shown" : "Calendar hidden");
