@@ -369,7 +369,7 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
       </DropdownMenu>
 
       {/* Visibility toggle — unchanged */}
-      <Switch defaultChecked={connection.isEnabled} onCheckedChange={handleToggle} />
+      <Switch checked={connection.isEnabled} onCheckedChange={handleToggle} />
 
       {/* Confirm dialog for disconnect */}
       <ConfirmDialog
