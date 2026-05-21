@@ -104,20 +104,22 @@ async function apiFetch<T>(
 }
 
 function mapConnection(raw: Record<string, unknown>): CalendarConnection {
+  const calendars = (raw.calendars ?? raw.sub_calendars ?? []) as CalendarConnection["calendars"];
+
   return {
     id: raw.id as string,
-    userId: raw.user_id as string,
+    userId: (raw.userId ?? raw.user_id) as string,
     source: raw.source as "google" | "outlook" | "apple" | "caldav" | "gmail",
-    connectionType: raw.connection_type as "calendar" | "email_watch" | "both",
-    accountEmail: raw.account_email as string,
-    displayName: (raw.display_name as string) ?? null,
+    connectionType: (raw.connectionType ?? raw.connection_type) as "calendar" | "email_watch" | "both",
+    accountEmail: (raw.accountEmail ?? raw.account_email) as string,
+    displayName: (raw.displayName ?? raw.display_name) as string,
     color: (raw.color as string) ?? null,
-    isEnabled: raw.is_enabled as boolean,
-    emailWatchEnabled: raw.email_watch_enabled as boolean,
-    lastSyncedAt: (raw.last_synced_at as string) ?? null,
-    syncStatus: raw.sync_status as "synced" | "syncing" | "error" | "disconnected",
-    errorMessage: (raw.error_message as string) ?? null,
-    calendars: (raw.sub_calendars as CalendarConnection["calendars"]) ?? [],
+    isEnabled: Boolean(raw.isEnabled ?? raw.is_enabled),
+    emailWatchEnabled: Boolean(raw.emailWatchEnabled ?? raw.email_watch_enabled),
+    lastSyncedAt: (raw.lastSyncedAt ?? raw.last_synced_at) as string,
+    syncStatus: (raw.syncStatus ?? raw.sync_status) as "synced" | "syncing" | "error" | "disconnected",
+    errorMessage: (raw.errorMessage ?? raw.error_message) as string | undefined,
+    calendars,
   };
 }
 
