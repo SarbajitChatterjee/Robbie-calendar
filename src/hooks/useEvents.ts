@@ -24,19 +24,36 @@ function useColoredEvents(events: CalendarEvent[] | undefined): CalendarEvent[] 
     if (!events) return events;
     if (!connections || connections.length === 0) return events;
 
-    const byId = new Map<string, string>();
-    const byEmail = new Map<string, string>();
+    const colorById = new Map<string, string>();
+    const colorByEmail = new Map<string, string>();
+    const enabledById = new Map<string, boolean>();
+    const enabledByEmail = new Map<string, boolean>();
     for (const c of connections) {
-      if (c.color) {
-        if (c.id) byId.set(c.id, c.color);
-        if (c.accountEmail) byEmail.set(c.accountEmail.toLowerCase(), c.color);
+      if (c.id) {
+        if (c.color) colorById.set(c.id, c.color);
+        enabledById.set(c.id, c.isEnabled);
+      }
+      if (c.accountEmail) {
+        const key = c.accountEmail.toLowerCase();
+        if (c.color) colorByEmail.set(key, c.color);
+        // If any matching connection is enabled, treat as enabled
+        enabledByEmail.set(key, (enabledByEmail.get(key) ?? false) || c.isEnabled);
       }
     }
 
-    return events.map((e) => {
+    const filtered = events.filter((e) => {
+      const byId = enabledById.get(e.calendarId);
+      if (byId !== undefined) return byId;
+      const email = e.accountEmail?.toLowerCase();
+      const byEmail = email ? enabledByEmail.get(email) : undefined;
+      if (byEmail !== undefined) return byEmail;
+      return true; // unknown mapping → don't hide
+    });
+
+    return filtered.map((e) => {
       const next =
-        byId.get(e.calendarId) ??
-        (e.accountEmail ? byEmail.get(e.accountEmail.toLowerCase()) : undefined) ??
+        colorById.get(e.calendarId) ??
+        (e.accountEmail ? colorByEmail.get(e.accountEmail.toLowerCase()) : undefined) ??
         e.color;
       return next === e.color ? e : { ...e, color: next };
     });

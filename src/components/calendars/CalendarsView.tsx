@@ -218,9 +218,14 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
   const handleToggle = async (enabled: boolean) => {
     try {
       await toggleCalendarVisibility(connection.id, enabled);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["calendars"] }),
+        qc.invalidateQueries({ queryKey: ["events"] }),
+      ]);
       toast.success(enabled ? "Calendar shown" : "Calendar hidden");
     } catch {
       toast.error("Couldn't update — try again");
+      await qc.invalidateQueries({ queryKey: ["calendars"] });
     }
   };
 
@@ -364,7 +369,7 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
       </DropdownMenu>
 
       {/* Visibility toggle — unchanged */}
-      <Switch defaultChecked={connection.isEnabled} onCheckedChange={handleToggle} />
+      <Switch checked={connection.isEnabled} onCheckedChange={handleToggle} />
 
       {/* Confirm dialog for disconnect */}
       <ConfirmDialog
