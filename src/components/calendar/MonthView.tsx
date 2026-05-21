@@ -21,6 +21,7 @@ import { CalendarEvent } from "@/types";
 import { EventCard } from "@/components/shared/EventCard";
 import { EventDetailSheet } from "@/components/shared/EventDetailSheet";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { SourceLegend } from "@/components/shared/SourceLegend";
 
 export default function MonthView() {
   const [monthOffset, setMonthOffset] = useState(0);
@@ -73,6 +74,9 @@ export default function MonthView() {
         <button onClick={() => setMonthOffset((o) => o + 1)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted">
           <ChevronRight className="w-5 h-5 text-foreground" />
         </button>
+          <div className="flex justify-center">
+            <SourceLegend />
+          </div> 
       </header>
 
       {/* Weekday column headers */}

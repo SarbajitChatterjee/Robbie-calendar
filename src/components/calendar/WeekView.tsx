@@ -27,6 +27,7 @@ import { CalendarEvent } from "@/types";
 import { EventDetailSheet } from "@/components/shared/EventDetailSheet";
 import { EventListSkeleton } from "@/components/shared/EventSkeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { SourceLegend } from "@/components/shared/SourceLegend";
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM – 8 PM
 const HOUR_HEIGHT = 72;
