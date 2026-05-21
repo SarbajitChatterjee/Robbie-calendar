@@ -1,40 +1,26 @@
+## Goal
+Fix the calendar visibility toggle so that (a) the switch reflects the actual DB state on refresh, and (b) events from disabled connections are hidden from all calendar views immediately.
 
+## Problems found
+1. **Switch is uncontrolled** — `<Switch defaultChecked={connection.isEnabled} ... />` in `CalendarsView.tsx` (line 367) uses `defaultChecked`, so after a refetch the UI doesn't sync with the DB value. It also never invalidates the `["calendars"]` cache.
+2. **No frontend filtering** — `useWeekEvents`, `useMonthEvents`, `usePendingInbox` in `useEvents.ts` return all events regardless of the parent connection's `isEnabled`. Even though the value persists in the DB, disabled calendars still show events on the frontend.
 
-# Enable Supabase + Implement Authentication Layer
+## Changes
 
-## Blocker: Supabase Not Connected
+### 1) `src/components/calendars/CalendarsView.tsx`
+- Make the visibility Switch **controlled**: `checked={connection.isEnabled}` instead of `defaultChecked`.
+- In `handleToggle`:
+  - On success: invalidate `["calendars"]` **and** `["events"]` so views re-render with the new visibility immediately.
+  - On error: also invalidate `["calendars"]` to revert UI to true DB state.
 
-Supabase is not yet set up in this project. There is no `@supabase/supabase-js` dependency, no client file, and no Supabase connection.
+### 2) `src/hooks/useEvents.ts`
+- Extend the existing `useColoredEvents` helper (or add a sibling `useVisibleColoredEvents`) to **filter out events whose parent connection has `isEnabled === false`**, matched by `calendarId` or `accountEmail` against the `["calendars"]` cache.
+- Apply to `useWeekEvents`, `useMonthEvents`, `usePendingInbox` (same call sites as today).
+- If the `["calendars"]` cache isn't loaded yet, fall back to showing all events (no false hides on first paint).
 
-**You need to do this first:**
+## Files touched (only these)
+- `src/components/calendars/CalendarsView.tsx`
+- `src/hooks/useEvents.ts`
 
-1. Open the **Cloud** tab in your Lovable project (top-right area of the editor)
-2. Enable **Lovable Cloud** (this provisions a Supabase instance and creates the client file at `src/integrations/supabase/client.ts`)
-3. Once enabled, reply here so I can proceed
-
-## What I Will Build After Supabase Is Connected
-
-Once the Supabase client exists, I will implement the full authentication layer exactly as specified:
-
-### Files to Create / Modify
-
-| File | Action |
-|---|---|
-| `src/pages/Auth.tsx` | **Create** -- Login + Signup page with two tabs |
-| `src/pages/AuthConfirm.tsx` | **Create** -- Email confirmation handler |
-| `src/App.tsx` | **Modify** -- Add `/auth`, `/auth/confirm` routes + AuthGuard |
-
-### Implementation (unchanged from approved plan)
-
-1. **AuthGuard** in App.tsx: listens to `onAuthStateChange`, redirects unauthenticated users to `/auth`, redirects authenticated users away from `/auth`
-
-2. **Auth.tsx** -- Login tab (email + password with show/hide + signInWithPassword) and Signup tab with all 7 fields in exact order: Display Name, Email, Password, Home Timezone (searchable from `public.timezones.tz_tag`), First Day of Week, Email Detection Mode (disabled, "ics_only"), Dark Mode (pill buttons)
-
-3. **AuthConfirm.tsx** -- Shows loading message, calls `getSession()`, validates session, reads `user_metadata`, upserts into `public.user_settings` with `onConflict: "user_id"`, redirects to homepage (or `/auth?error=confirmation_failed` on failure)
-
-4. **Data integrity**: signup stores fields in `user_metadata` only; `user_settings` is written to only after confirmed session; failed confirmation writes nothing
-
-## Next Step
-
-Enable Lovable Cloud from the Cloud tab, then tell me to proceed.
-
+## NOT touched
+`.env`, `supabase/*`, `src/integrations/supabase/*`, `src/types/index.ts`, `src/services/api.ts`, `BACKEND_API.md`, or any other file.

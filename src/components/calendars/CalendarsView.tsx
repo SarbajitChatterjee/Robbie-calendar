@@ -13,8 +13,15 @@
 
 import { useState } from "react";
 import { useCalendars } from "@/hooks/useCalendars";
-import { SourceLegend } from "@/components/shared/SourceLegend";
-import { toggleCalendarVisibility, syncNow } from "@/services/api";
+// import { toggleCalendarVisibility, syncNow } from "@/services/api";
+import {
+  toggleCalendarVisibility,
+  syncNow,
+  disconnectCalendar,
+  updateCalendarColor,
+  startEmailWatch,
+  stopEmailWatch,
+} from "@/services/api";
 import { CalendarConnection } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -25,6 +32,18 @@ import { formatDistanceToNow } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { initiateOAuthConnection } from "@/services/api";
+
+import { useQueryClient } from "@tanstack/react-query";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+// import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { MoreHorizontal, Mail, Trash2, RefreshCw } from "lucide-react";
 
 /** Icon config for each calendar source type. */
 const sourceIcons: Record<string, { bg: string; label: string }> = {
@@ -130,6 +149,65 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
 
   // for showing loader animation
   const [isSyncing, setIsSyncing] = useState(false);
+  const [watchPending, setWatchPending] = useState(false);
+
+  const qc = useQueryClient();
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+  // const [colorOpen, setColorOpen] = useState(false);
+
+  const COLOR_PRESETS = [
+    "#C8B800", "#0078D4", "#FF3B30", "#34C759",
+    "#AF52DE", "#FF9500", "#5AC8FA", "#8E8E93",
+  ];
+
+  const canWatchEmail = connection.connectionType !== "calendar";
+
+  const handleColorChange = async (next: string) => {
+    try {
+      await updateCalendarColor(connection.id, next);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["calendars"] }),
+        qc.invalidateQueries({ queryKey: ["events"] }),
+      ]);
+      toast.success("Color updated");
+    } catch {
+      toast.error("Couldn't update color");
+    }
+  };
+
+  const handleEmailWatchToggle = async (next: boolean) => {
+    if (watchPending) return;
+    setWatchPending(true);
+    try {
+      if (next) {
+        await startEmailWatch(connection.id);
+        toast.success("Email watch on — scanning started");
+      } else {
+        await stopEmailWatch(connection.id);
+        toast.success("Email watch off");
+      }
+      await qc.invalidateQueries({ queryKey: ["calendars"] });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Couldn't update email watch";
+      toast.error(msg);
+      await qc.invalidateQueries({ queryKey: ["calendars"] });
+    } finally {
+      setWatchPending(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      await disconnectCalendar(connection.id);
+      await qc.invalidateQueries({ queryKey: ["calendars"] });
+      await qc.invalidateQueries({ queryKey: ["events"] });
+      toast.success("Calendar disconnected");
+    } catch {
+      toast.error("Couldn't disconnect — try again");
+    } finally {
+      setConfirmDisconnect(false);
+    }
+  };
 
   const syncLabel = isError
     ? connection.errorMessage || "Error — tap to fix"
@@ -143,9 +221,14 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
   const handleToggle = async (enabled: boolean) => {
     try {
       await toggleCalendarVisibility(connection.id, enabled);
+      await Promise.all([
+        qc.refetchQueries({ queryKey: ["calendars"], type: "active" }),
+        qc.invalidateQueries({ queryKey: ["events"] }),
+      ]);
       toast.success(enabled ? "Calendar shown" : "Calendar hidden");
     } catch {
       toast.error("Couldn't update — try again");
+      await qc.invalidateQueries({ queryKey: ["calendars"] });
     }
   };
 
@@ -158,44 +241,149 @@ function ConnectionRow({ connection }: { connection: CalendarConnection }) {
         <div className="flex items-center gap-2">
           <p className="font-medium text-foreground truncate">{connection.displayName}</p>
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${badge.color}`}>{badge.label}</span>
+          {connection.emailWatchEnabled && connection.connectionType !== "calendar" && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-[hsl(38,92%,88%)] text-[hsl(38,70%,35%)]">
+              <Mail className="w-2.5 h-2.5" />
+              Watching
+            </span>
+          )}
         </div>
         <p className="text-xs text-muted-foreground truncate">{connection.accountEmail}</p>
         <p className={`text-xs mt-0.5 ${isError ? "text-[hsl(var(--status-error))]" : "text-[hsl(var(--status-success))]"}`}>
           {isError && <AlertTriangle className="w-3 h-3 inline mr-1" />}
           {syncLabel}
         </p>
-        {/* Sync button */}
-        <button
-          disabled={isSyncing}
-          onClick={async () => {
-            try {
-              setIsSyncing(true);
-              await syncNow(connection.id);
-              toast.success("Sync started!");
-            } catch {
-              toast.error("Sync failed — try again");
-            } finally {
-              setIsSyncing(false);
-            }
-          }}
-          className="text-xs px-3 py-1.5 rounded-[var(--radius-button)] border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSyncing ? (
-            <span className="flex items-center gap-1">
-              <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-              </svg>
-              Syncing...
-            </span>
-          ) : (
-            "Sync"
-          )}
-        </button>
       </div>
       {/* Color indicator strip */}
-      <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: connection.color }} />
-      <Switch defaultChecked={connection.isEnabled} onCheckedChange={handleToggle} />
+      {/* <div className="w-1 h-8 rounded-full flex-shrink-0" style={{ backgroundColor: connection.color }} />
+      <Switch defaultChecked={connection.isEnabled} onCheckedChange={handleToggle} /> */}
+
+      {/* Color indicator — color is now edited from the menu */}
+      <div
+        aria-hidden="true"
+        className="w-1.5 h-8 rounded-full flex-shrink-0"
+        style={{ backgroundColor: connection.color }}
+      />
+
+      {/* Sync — icon button, matches the … menu style */}
+      <button
+        aria-label={isSyncing ? "Syncing" : "Sync now"}
+        disabled={isSyncing}
+        onClick={async () => {
+          try {
+            setIsSyncing(true);
+            await syncNow(connection.id);
+            await qc.invalidateQueries({ queryKey: ["calendars"] });
+            await qc.invalidateQueries({ queryKey: ["events"] });
+            toast.success("Sync started");
+          } catch {
+            toast.error("Sync failed — try again");
+          } finally {
+            setIsSyncing(false);
+          }
+        }}
+        className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <RefreshCw className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`} />
+      </button>
+
+
+      {/* Overflow menu — change color, email watch, disconnect */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            aria-label="More actions"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
+        </DropdownMenuTrigger>
+       <DropdownMenuContent align="end" className="w-64 rounded-[var(--radius-card)] p-2">
+          {/* Inline color picker — no nested popover, so no flash */}
+          <div className="px-2 pt-1 pb-2">
+            <p className="text-[11px] font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+              Calendar color
+            </p>
+            <div className="grid grid-cols-8 gap-1.5 mb-2">
+              {COLOR_PRESETS.map((c) => {
+                const selected = connection.color?.toLowerCase() === c.toLowerCase();
+                return (
+                  <button
+                    key={c}
+                    onClick={() => handleColorChange(c)}
+                    aria-label={`Set color ${c}`}
+                    className={`w-5 h-5 rounded-full transition-transform hover:scale-110 focus:outline-none ${
+                      selected ? "ring-2 ring-foreground ring-offset-1" : ""
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                );
+              })}
+            </div>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <input
+                type="color"
+                value={connection.color || "#000000"}
+                onChange={(e) => handleColorChange(e.target.value)}
+                className="w-5 h-5 rounded cursor-pointer border border-border"
+              />
+              Custom color
+            </label>
+          </div>
+
+          <DropdownMenuSeparator />
+
+          {/* Watch inbox — clear on/off Switch with status label; menu stays open on toggle */}
+          {canWatchEmail && (
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              className="flex items-center justify-between gap-2 cursor-pointer"
+            >
+              <span className="flex items-center">
+                <Mail className="w-4 h-4 mr-2" />
+                <span className="flex flex-col leading-tight">
+                  <span>Watch inbox</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {watchPending
+                      ? (connection.emailWatchEnabled ? "Stopping…" : "Starting scan…")
+                      : (connection.emailWatchEnabled ? "On" : "Off")}
+                  </span>
+                </span>
+              </span>
+              <Switch
+                checked={!!connection.emailWatchEnabled}
+                disabled={watchPending}
+                onCheckedChange={handleEmailWatchToggle}
+                className="scale-75"
+              />
+            </DropdownMenuItem>
+          )}
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem
+            onClick={() => setConfirmDisconnect(true)}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Disconnect
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Visibility toggle — unchanged */}
+      <Switch checked={connection.isEnabled} onCheckedChange={handleToggle} />
+
+      {/* Confirm dialog for disconnect */}
+      <ConfirmDialog
+        open={confirmDisconnect}
+        onOpenChange={setConfirmDisconnect}
+        title="Disconnect this calendar?"
+        description={`We'll remove ${connection.displayName} (${connection.accountEmail}) and stop syncing its events. You can reconnect it later.`}
+        confirmLabel="Disconnect"
+        destructive
+        onConfirm={handleDisconnect}
+      />
     </div>
   );
 }

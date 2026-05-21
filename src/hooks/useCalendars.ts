@@ -12,5 +12,9 @@ export function useCalendars() {
   return useQuery({
     queryKey: ["calendars"],
     queryFn: getCalendarConnections,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }

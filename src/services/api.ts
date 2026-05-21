@@ -104,20 +104,22 @@ async function apiFetch<T>(
 }
 
 function mapConnection(raw: Record<string, unknown>): CalendarConnection {
+  const calendars = (raw.calendars ?? raw.sub_calendars ?? []) as CalendarConnection["calendars"];
+
   return {
     id: raw.id as string,
-    userId: raw.user_id as string,
+    userId: (raw.userId ?? raw.user_id) as string,
     source: raw.source as "google" | "outlook" | "apple" | "caldav" | "gmail",
-    connectionType: raw.connection_type as "calendar" | "email_watch" | "both",
-    accountEmail: raw.account_email as string,
-    displayName: (raw.display_name as string) ?? null,
+    connectionType: (raw.connectionType ?? raw.connection_type) as "calendar" | "email_watch" | "both",
+    accountEmail: (raw.accountEmail ?? raw.account_email) as string,
+    displayName: (raw.displayName ?? raw.display_name) as string,
     color: (raw.color as string) ?? null,
-    isEnabled: raw.is_enabled as boolean,
-    emailWatchEnabled: raw.email_watch_enabled as boolean,
-    lastSyncedAt: (raw.last_synced_at as string) ?? null,
-    syncStatus: raw.sync_status as "synced" | "syncing" | "error" | "disconnected",
-    errorMessage: (raw.error_message as string) ?? null,
-    calendars: (raw.sub_calendars as CalendarConnection["calendars"]) ?? [],
+    isEnabled: (raw.isEnabled ?? raw.is_enabled ?? true) as boolean,
+    emailWatchEnabled: (raw.emailWatchEnabled ?? raw.email_watch_enabled ?? false) as boolean,
+    lastSyncedAt: (raw.lastSyncedAt ?? raw.last_synced_at) as string,
+    syncStatus: (raw.syncStatus ?? raw.sync_status) as "synced" | "syncing" | "error" | "disconnected",
+    errorMessage: (raw.errorMessage ?? raw.error_message) as string | undefined,
+    calendars,
   };
 }
 
@@ -263,16 +265,22 @@ export async function toggleCalendarVisibility(
 }
 
 /**
- * PATCH /calendars/:id/email-watch
- * Toggles email inbox watching for a connection.
+ * POST /calendars/:id/email-watch/start
+ * Backend runs fetchEmails() → emailScan(); only on full success does it
+ * set email_watch_enabled = true. On any failure, DB stays false and a
+ * non-2xx is returned so the UI can revert.
  */
-export async function toggleEmailWatch(
-  connectionId: string,
-  enabled: boolean
-): Promise<void> {
-  return apiFetch("PATCH", `/calendars/${connectionId}/email-watch`, {
-    enabled,
-  });
+export async function startEmailWatch(connectionId: string): Promise<void> {
+  return apiFetch("POST", `/calendars/${connectionId}/email-watch/start`);
+}
+
+/**
+ * POST /calendars/:id/email-watch/stop
+ * Backend stops the watcher; only on success does it set
+ * email_watch_enabled = false.
+ */
+export async function stopEmailWatch(connectionId: string): Promise<void> {
+  return apiFetch("POST", `/calendars/${connectionId}/email-watch/stop`);
 }
 
 // ─────────────────────────────────────────────
