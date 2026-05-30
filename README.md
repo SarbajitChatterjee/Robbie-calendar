@@ -65,14 +65,11 @@ For the full backend API contract — all endpoints, request/response shapes, SQ
 
 ## 🖼️ Screenshots
 
-> **[SCREENSHOT — Today View]**  
-> _Caption: Unified day view showing events from multiple calendar sources with colour-coded source bars and meeting join buttons._
+> **[SCREENSHOT — Month View]**  
+> _Caption: Month view showing synced Google Calendar events with day-level event previews and date navigation._
 
 > **[SCREENSHOT — Calendars Screen]**  
 > _Caption: Connected calendar sources with sync status, colour pickers, and visibility toggles._
-
-> **[SCREENSHOT — Inbox Tab]**  
-> _Caption: Email-detected event invitations awaiting review before being added to the calendar._
 
 > **[SCREENSHOT — Settings Page]**  
 > _Caption: User preferences including home timezone (fetched from the timezone reference table), email detection mode, and dark mode toggle._
