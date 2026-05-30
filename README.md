@@ -40,9 +40,11 @@ Frontend (React + TypeScript)
                 └── Components
 
 Backend (FastAPI + Python)           ← Deployed on Render
-    ├── /api/events                  ← Event fetching
+    ├── /api/events                  ← Event fetching + pending inbox
     ├── /api/calendars               ← Calendar connection management
-    └── /api/calendars/connect/oauth ← Google OAuth flow
+    ├── /api/calendars/connect/oauth ← Google OAuth flow
+    ├── /api/user/settings           ← User preferences
+    └── /api/email-watch             ← Email inbox watch management (planned)
 
 Database (Supabase / PostgreSQL)
     ├── events
@@ -58,6 +60,25 @@ Database (Supabase / PostgreSQL)
 For the full architecture breakdown — data flow, folder structure, design system, and conventions — see [`STRUCTURE.md`](./STRUCTURE.md).
 
 For the full backend API contract — all endpoints, request/response shapes, SQL DDL, and column mappings — see [`BACKEND_API.md`](./BACKEND_API.md).
+
+---
+
+## 🖼️ Screenshots
+
+> **[SCREENSHOT — Today View]**  
+> _Caption: Unified day view showing events from multiple calendar sources with colour-coded source bars and meeting join buttons._
+
+> **[SCREENSHOT — Calendars Screen]**  
+> _Caption: Connected calendar sources with sync status, colour pickers, and visibility toggles._
+
+> **[SCREENSHOT — Inbox Tab]**  
+> _Caption: Email-detected event invitations awaiting review before being added to the calendar._
+
+> **[SCREENSHOT — Settings Page]**  
+> _Caption: User preferences including home timezone (fetched from the timezone reference table), email detection mode, and dark mode toggle._
+
+> **[SCREENSHOT — Auth / Sign-in Page]**  
+> _Caption: Clean sign-in and sign-up flow powered by Supabase Auth._
 
 ---
 
@@ -118,6 +139,7 @@ npm run test:watch   # Vitest (watch mode)
 - **Row-Level Security (RLS):** Active on every Supabase table. Users can only access their own data, enforced at the database layer.
 - **JWT validation:** Every API request is verified against Supabase's JWKS endpoint before any data is touched.
 - **AuthGuard:** All protected routes are wrapped in an `AuthGuard` component that listens to `onAuthStateChange`, keeps the Supabase JWT synced to `localStorage` as a Bearer token, and redirects unauthenticated users to `/auth`.
+- **Email confirmation flow:** On signup, `AuthConfirm.tsx` waits for a confirmed Supabase session via `onAuthStateChange` before writing `user_settings` — ensuring settings are only created for verified users.
 
 > **Data Governance:** This application acts as a secure proxy. Your calendar data is never stored or sold.
 
@@ -146,7 +168,7 @@ src/
 │   └── ui/                           # ⛔ shadcn/ui — do not edit
 ├── pages/
 │   ├── Auth.tsx                      # Login + Signup page (Supabase auth)
-│   ├── AuthConfirm.tsx               # Email confirmation handler → writes user_settings on first login
+│   ├── AuthConfirm.tsx               # Email confirmation handler → triggers user_settings creation via DB trigger on first login
 │   ├── Index.tsx                     # Main app shell (protected)
 │   ├── Settings.tsx                  # User preferences (protected, Supabase direct)
 │   └── NotFound.tsx                  # 404 catch-all
@@ -168,8 +190,5 @@ Full breakdown with what-goes-where table and conventions → [`STRUCTURE.md`](.
 | [`BACKEND_API.md`](./BACKEND_API.md) | REST API contract, SQL DDL, JSON shapes, column mappings |
 
 ---
-
 > [!IMPORTANT]
 > **Data Governance:** This application does not cache your calendar data. We act as a secure proxy to ensure your schedule remains private and under your control at all times.
-
----
