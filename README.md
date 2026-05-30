@@ -65,16 +65,28 @@ For the full backend API contract — all endpoints, request/response shapes, SQ
 
 ## 🖼️ Screenshots
 
-> **[SCREENSHOT — Month View]**  
+> **[SCREENSHOT — Month View]**
+>
+> ![Month View](assets/screenshot/month-view.png)
+>
 > _Caption: Month view showing synced Google Calendar events with day-level event previews and date navigation._
 
 > **[SCREENSHOT — Calendars Screen]**  
+>
+> ![Calendars Screen](assets/screenshots/calendars_screen.png)
+>
 > _Caption: Connected calendar sources with sync status, colour pickers, and visibility toggles._
 
 > **[SCREENSHOT — Settings Page]**  
+>
+>![Settings Page](assets/screenshots/settings.png)
+>
 > _Caption: User preferences including home timezone (fetched from the timezone reference table), email detection mode, and dark mode toggle._
 
-> **[SCREENSHOT — Auth / Sign-in Page]**  
+> **[SCREENSHOT — Auth / Sign-in Page]** 
+>
+>![Auth Page](assets/screenshots/auth.png) 
+>
 > _Caption: Clean sign-in and sign-up flow powered by Supabase Auth._
 
 ---
