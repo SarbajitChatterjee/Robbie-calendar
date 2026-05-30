@@ -67,7 +67,7 @@ For the full backend API contract — all endpoints, request/response shapes, SQ
 
 > **[SCREENSHOT — Month View]**
 >
-> ![Month View](assets/screenshot/month_view.png)
+> ![Month View](assets/screenshots/month_view.png)
 >
 > _Caption: Month view showing synced Google Calendar events with day-level event previews and date navigation._
 
