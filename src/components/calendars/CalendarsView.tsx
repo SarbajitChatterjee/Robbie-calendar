@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 // import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { MoreHorizontal, Mail, Trash2, RefreshCw } from "lucide-react";
+import { SourceLegend } from "@/components/shared/SourceLegend";
 
 /** Icon config for each calendar source type. */
 const sourceIcons: Record<string, { bg: string; label: string }> = {

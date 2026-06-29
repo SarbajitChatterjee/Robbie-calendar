@@ -61,7 +61,7 @@ export default function TodayView({ onTabChange }: TodayViewProps) {
         <h1 className="text-[28px] font-bold text-foreground">
           Today, {format(new Date(), "EEEE d MMMM")}
         </h1>
-        {settings && <TimezonePill timezone={settings.homeTimezone} />}
+        {settings && <TimezonePill timezone={settings.home_timezone} />}
 
         <div className="flex justify-center">
           <SourceLegend />
