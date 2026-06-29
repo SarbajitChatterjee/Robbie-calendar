@@ -6,11 +6,7 @@
  * - Mobile: fixed bottom tab bar with icons
  * - Content area: switches between views based on activeTab state
  *
- * Tab switching is state-driven (not route-driven) because all views
- * share the same data context and benefit from staying mounted.
- *
- * Passes `onTabChange` to child views that need to trigger tab switches
- * (e.g. TodayView's "Review" banner navigates to the Inbox tab).
+ * Also mounts the real-time email-detection popup and the Inbox tab badge.
  */
 
 import { useState, useCallback } from "react";
@@ -22,6 +18,9 @@ import MonthView from "@/components/calendar/MonthView";
 import InboxView from "@/components/inbox/InboxView";
 import CalendarsView from "@/components/calendars/CalendarsView";
 import SettingsView from "@/pages/Settings";
+import { useEventDetection } from "@/hooks/useEventDetection";
+import { usePendingInbox } from "@/hooks/useEvents";
+import EventDetectedPopup from "@/components/shared/EventDetectedPopup";
 
 /** Tab configuration — order here determines render order in nav. */
 const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
@@ -36,11 +35,35 @@ export default function AppLayout() {
   const [activeTab, setActiveTab] = useState<TabId>("today");
   const [showSettings, setShowSettings] = useState(false);
 
+  const { currentEvent, queueCount, acceptCurrent, dismissCurrent, snoozeAll } =
+    useEventDetection();
+  const { data: pendingEvents } = usePendingInbox();
+  const pendingCount = pendingEvents?.length ?? 0;
+
   /** Navigate to a specific tab, dismissing Settings if open. */
   const handleTabChange = useCallback((tabId: TabId) => {
     setActiveTab(tabId);
     setShowSettings(false);
   }, []);
+
+  /** Renders an icon with an optional pending-count badge (Inbox tab only). */
+  const renderTabIcon = (
+    tab: { id: TabId; icon: React.ElementType },
+    iconClass: string,
+  ) => {
+    const Icon = tab.icon;
+    const showBadge = tab.id === "inbox" && pendingCount > 0;
+    return (
+      <span className="relative inline-flex">
+        <Icon className={iconClass} />
+        {showBadge && (
+          <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-[hsl(var(--fuse-primary))] text-white text-[10px] font-semibold flex items-center justify-center leading-none">
+            {pendingCount > 9 ? "9+" : pendingCount}
+          </span>
+        )}
+      </span>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -58,7 +81,6 @@ export default function AppLayout() {
         {/* Tab buttons + Settings */}
         <div className="flex items-center gap-1">
           {tabs.map((tab) => {
-            const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
@@ -67,7 +89,7 @@ export default function AppLayout() {
                   activeTab === tab.id && !showSettings ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                {renderTabIcon(tab, "w-4 h-4")}
                 {tab.label}
               </button>
             );
@@ -102,7 +124,6 @@ export default function AppLayout() {
       {/* ── Mobile Bottom Tab Bar ─────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border flex items-center justify-around z-40 pb-safe" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
         {tabs.map((tab) => {
-          const Icon = tab.icon;
           const isActive = activeTab === tab.id && !showSettings;
           return (
             <button
@@ -112,12 +133,26 @@ export default function AppLayout() {
                 isActive ? "text-[hsl(var(--fuse-primary))]" : "text-muted-foreground"
               }`}
             >
-              <Icon className="w-5 h-5" />
+              {renderTabIcon(tab, "w-5 h-5")}
               <span className="text-[10px] mt-0.5 font-medium">{tab.label}</span>
             </button>
           );
         })}
       </nav>
+
+      {/* ── Real-time Event Detection Popup ──────────────── */}
+      {currentEvent && (
+        <EventDetectedPopup
+          event={currentEvent}
+          queueCount={queueCount}
+          onAccept={acceptCurrent}
+          onDismiss={dismissCurrent}
+          onCheckLater={() => {
+            snoozeAll();
+            handleTabChange("inbox");
+          }}
+        />
+      )}
     </div>
   );
 }
