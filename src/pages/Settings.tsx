@@ -74,7 +74,7 @@ export default function SettingsView() {
   // const initials = settings.displayName.slice(0, 2).toUpperCase();
 
   // Better way of handling blanks:
-  const initials = (settings.displayName ?? "").slice(0, 2).toUpperCase() || "?";
+  const initials = (settings.display_name ?? "").slice(0, 2).toUpperCase() || "?";
 
   const navigate = useNavigate();
 
@@ -86,7 +86,7 @@ export default function SettingsView() {
           {initials}
         </div>
         <div>
-          <h1 className="text-xl font-bold text-foreground">{settings.displayName}</h1>
+          <h1 className="text-xl font-bold text-foreground">{settings.display_name}</h1>
           <p className="text-sm text-muted-foreground">{settings.email}</p>
         </div>
       </header>
@@ -95,9 +95,8 @@ export default function SettingsView() {
       <div className="px-5 space-y-6">
         <SettingRow label="Home Timezone">
           <Select
-            defaultValue={settings.homeTimezone}
-            /*onValueChange={(value) => saveSettingWithFeedback({ homeTimezone: value }, queryClient)}*/
-            onValueChange={(value) => saveSettingWithFeedback({ homeTimezone: value }, updateSettings)}
+            defaultValue={settings.home_timezone}
+            onValueChange={(value) => saveSettingWithFeedback({ home_timezone: value }, updateSettings)}
           >
             <SelectTrigger className="w-48 h-10 rounded-[var(--radius-button)]">
               <SelectValue />
@@ -114,17 +113,15 @@ export default function SettingsView() {
 
         <SettingRow label="Show organizer timezone on events">
           <Switch
-            defaultChecked={settings.showOrganizerTimezone}
-            /*onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, queryClient)}*/
-            onCheckedChange={(checked) => saveSettingWithFeedback({ showOrganizerTimezone: checked }, updateSettings)}
+            defaultChecked={settings.show_organizer_timezone}
+            onCheckedChange={(checked) => saveSettingWithFeedback({ show_organizer_timezone: checked }, updateSettings)}
           />
         </SettingRow>
 
         <SettingRow label="First day of week">
           <Select
-            defaultValue={settings.firstDayOfWeek}
-            /*onValueChange={(value) => saveSettingWithFeedback({ firstDayOfWeek: value as UserSettings["firstDayOfWeek"] }, queryClient)}*/
-            onValueChange={(value) => saveSettingWithFeedback({ firstDayOfWeek: value as UserSettings["firstDayOfWeek"] }, updateSettings)}
+            defaultValue={settings.first_day_of_week}
+            onValueChange={(value) => saveSettingWithFeedback({ first_day_of_week: value as UserSettings["firstDayOfWeek"] }, updateSettings)}
           >
             <SelectTrigger className="w-32 h-10 rounded-[var(--radius-button)]">
               <SelectValue />
@@ -138,9 +135,8 @@ export default function SettingsView() {
 
         <SettingRow label="Email detection">
           <Select
-            defaultValue={settings.emailDetectionMode}
-            /*onValueChange={(value) => saveSettingWithFeedback({ emailDetectionMode: value as UserSettings["emailDetectionMode"] }, queryClient)}*/
-            onValueChange={(value) => saveSettingWithFeedback({ emailDetectionMode: value as UserSettings["emailDetectionMode"] }, updateSettings)}
+            defaultValue={settings.email_detection_mode}
+            onValueChange={(value) => saveSettingWithFeedback({ email_detection_mode: value as UserSettings["emailDetectionMode"] }, updateSettings)}
           >
             <SelectTrigger className="w-48 h-10 rounded-[var(--radius-button)]">
               <SelectValue />
@@ -155,9 +151,8 @@ export default function SettingsView() {
 
         <SettingRow label="Dark mode">
           <Switch
-            defaultChecked={settings.darkMode}
-            /*onCheckedChange={(checked) => saveSettingWithFeedback({ darkMode: checked }, queryClient)}*/
-            onCheckedChange={(checked) => saveSettingWithFeedback({ darkMode: checked }, updateSettings)}
+            defaultChecked={settings.dark_mode}
+            onCheckedChange={(checked) => saveSettingWithFeedback({ dark_mode: checked }, updateSettings)}
           />
         </SettingRow>
 
